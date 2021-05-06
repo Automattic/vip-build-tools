@@ -127,10 +127,12 @@ function create_draft_changelog( $title, $content, $tags ) {
 function get_changelog_tags( $github_labels ) {
     $tags = explode( ",", WP_CHANGELOG_TAG_IDS );
 
-    foreach ( $github_labels as $label ) {
-        preg_match('/ChangelogTagID:\s*(\d+)/', $label['description'], $matches);
-        if ( $matches ) {
-            array_push( $tags, $matches[1] );
+    if ( isset( $github_labels ) && count( $github_labels ) > 0 ) {
+        foreach ( $github_labels as $label ) {
+            preg_match('/ChangelogTagID:\s*(\d+)/', $label['description'], $matches);
+            if ( $matches ) {
+                array_push( $tags, $matches[1] );
+            }
         }
     }
 
@@ -140,7 +142,12 @@ function get_changelog_tags( $github_labels ) {
 function create_changelog_for_last_PR() {
     $pr = fetch_last_PR();
 
-    $changelog_tags = get_changelog_tags( $pr['labels'] );
+    if ( ! isset( $pr[ 'id' ] ) ) {
+        echo "Failed to retrieve last closed pull request.\n";
+        exit( 1 );
+    }
+
+    $changelog_tags = get_changelog_tags( $pr[ 'labels' ] );
     $changelog_html = get_changelog_html( $pr );
     $changelog_record = parse_changelog_html( $changelog_html );
 
