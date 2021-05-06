@@ -1,0 +1,19 @@
+workflows:
+  version: 2
+  changelog:
+    jobs:
+      - create-changelog-draft:
+          filters:
+            branches:
+              only: master
+
+version: 2.1
+
+jobs:
+  create-changelog-draft:
+    docker:
+      - image: circleci/php:7.4-node
+    steps:
+      - checkout
+      - run: composer install
+      - run: php $HOME/project/vendor/vip-build-tools/scripts/github-changelog.php

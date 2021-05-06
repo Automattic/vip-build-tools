@@ -49,3 +49,5 @@ In the example above, the following is to be expected:
 1. A post will be created on the `wpvipchangelog.wordpress.com` site.
 2. The post will be tagged with the tag of id `1784989`.
 3. The contents of the post should be all text in the PR description that is between the `<h2>Changelog Description` and `<h2>` markers.
+
+An example [CircleCI Workflow](https://circleci.com/docs/2.0/workflows/) is available [here](/examples/changelog-circleci-config.yml).
