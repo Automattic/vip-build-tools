@@ -33,6 +33,7 @@ if ( ! isset( $options[ "wp-endpoint" ] ) ) {
 define( 'PR_USERNAME', $_SERVER[ 'CIRCLE_PROJECT_USERNAME' ] );
 define( 'PR_REPONAME', $_SERVER[ 'CIRCLE_PROJECT_REPONAME' ] );
 define( 'CHANGELOG_POST_TOKEN', $_SERVER[ 'CHANGELOG_POST_TOKEN' ] );
+define( 'GITHUB_TOKEN', $_SERVER[ 'GITHUB_TOKEN' ] );
 
 define( 'GITHUB_ENDPOINT', 'https://api.github.com/repos/' . PR_USERNAME . '/' . PR_REPONAME . '/pulls?per_page=10&sort=updated&direction=desc&state=closed');
 define( 'PR_CHANGELOG_START_MARKER', $options[ 'start-marker' ] ?? '<h2>Changelog Description' );
@@ -42,16 +43,24 @@ define( 'WP_CHANGELOG_TAG_IDS', $options[ 'wp-tag-ids' ] );
 
 function fetch_last_PR() {
     $ch = curl_init( GITHUB_ENDPOINT );
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-    curl_setopt($ch, CURLOPT_HEADER, 0);
-    curl_setopt($ch, CURLOPT_HTTPHEADER, [ 'User-Agent: script' ] );
-    $data = curl_exec($ch);
-    curl_close($ch);
+    $headers = [ 'User-Agent: script' ];
 
-    $last_prs = json_decode($data, true);
+    curl_setopt( $ch, CURLOPT_HEADER, 0 );
+    curl_setopt( $ch, CURLOPT_RETURNTRANSFER, true );
+    curl_setopt( $ch, CURLOPT_VERBOSE, true );
+
+    if ( isset( $_SERVER[ 'GITHUB_TOKEN' ] ) ) {
+        array_push( $headers, 'Authorization:token ' . GITHUB_TOKEN );
+    }
+
+    curl_setopt( $ch, CURLOPT_HTTPHEADER,  $headers );
+    $data = curl_exec( $ch );
+    curl_close( $ch );
+
+    $last_prs = json_decode( $data, true );
     $merged_prs = array_filter( $last_prs, function ( $pr ) { return $pr['merged_at'] ?? ''; } );
 
-    return $merged_prs[0];
+    return $merged_prs[ 0 ];
 }
 
 function get_changelog_section_in_description_html( $description ) {

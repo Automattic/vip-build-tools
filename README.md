@@ -36,6 +36,7 @@ Most of these variables are already [built-in](https://circleci.com/docs/2.0/env
 | CIRCLE_PROJECT_USERNAME | The GitHub username of the current project.            | Required            |
 | CIRCLE_PROJECT_REPONAME | The name of the repository of the current project.     | Required            |
 | CHANGELOG_POST_TOKEN    | WordPress auth token required to post to the endpoint. | Required            |
+| SSH_KEY_FILE            | The path to the private key file.                      | Optional            |
 
 ### Usage Example
 
