@@ -1,4 +1,4 @@
-# VIP Build Scripts
+# VIP Build Tools
 
 A collection of helpful scripts to be used in CI jobs.
 

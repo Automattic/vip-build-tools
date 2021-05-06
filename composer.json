@@ -1,5 +1,5 @@
 {
-    "name": "automattic/vip-build-scripts",
+    "name": "automattic/vip-build-tools",
     "description": "A collection of helpful build scripts for the WordPress VIP staff.",
     "require-dev": {
         "dealerdirect/phpcodesniffer-composer-installer": "^0.7.0",
