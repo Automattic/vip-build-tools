@@ -6,7 +6,7 @@ function is_env_set() {
     return isset(
         $_SERVER[ 'CIRCLE_PROJECT_USERNAME' ],
         $_SERVER[ 'CIRCLE_PROJECT_REPONAME' ],
-        $_SERVER[ 'WP_CHANGELOG_AUTH_TOKEN'],
+        $_SERVER[ 'CHANGELOG_POST_TOKEN'],
     );
 }
 
@@ -14,7 +14,7 @@ if ( ! is_env_set() ) {
     echo "The following environment variables need to be set:
     \tCIRCLE_PROJECT_USERNAME
     \tCIRCLE_PROJECT_REPONAME
-    \tWP_CHANGELOG_AUTH_TOKEN\n";
+    \tCHANGELOG_POST_TOKEN\n";
     exit( 1 );   
 }
 
@@ -32,7 +32,7 @@ if ( ! isset( $options[ "wp-endpoint" ] ) ) {
 
 define( 'PR_USERNAME', $_SERVER[ 'CIRCLE_PROJECT_USERNAME' ] );
 define( 'PR_REPONAME', $_SERVER[ 'CIRCLE_PROJECT_REPONAME' ] );
-define( 'WP_CHANGELOG_AUTH_TOKEN', $_SERVER[ 'WP_CHANGELOG_AUTH_TOKEN' ] );
+define( 'CHANGELOG_POST_TOKEN', $_SERVER[ 'CHANGELOG_POST_TOKEN' ] );
 
 define( 'GITHUB_ENDPOINT', 'https://api.github.com/repos/' . PR_USERNAME . '/' . PR_REPONAME . '/pulls?per_page=10&sort=updated&direction=desc&state=closed');
 define( 'PR_CHANGELOG_START_MARKER', $options[ 'start-marker' ] ?? '<h2>Changelog Description' );
@@ -108,7 +108,7 @@ function create_draft_changelog( $title, $content, $tags ) {
     $ch = curl_init( WP_CHANGELOG_ENDPOINT );
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
     curl_setopt($ch, CURLOPT_POST, true);
-    curl_setopt($ch, CURLOPT_HTTPHEADER, [ 'Authorization:Bearer ' . WP_CHANGELOG_AUTH_TOKEN ] );
+    curl_setopt($ch, CURLOPT_HTTPHEADER, [ 'Authorization:Bearer ' . CHANGELOG_POST_TOKEN ] );
     curl_setopt($ch, CURLOPT_POSTFIELDS, $fields);
     $response = curl_exec($ch);
     $http_code = curl_getinfo($ch, CURLINFO_RESPONSE_CODE);
