@@ -20,23 +20,32 @@ Extracts changelog information from the last closed Pull Request description and
 
 ### Options
 
-| Option        | Description                                              | Required / Optional |
-| ------------- |:--------------------------------------------------------:|---------------------| 
-| wp-endpoint   | The endpoint url where the changelog is gonna be posted. | Required            |
-| wp-tag-ids    | Tag ids to add to the post                               | Optional            |
-| gh-endpoint   | GitHub endpoint used to retrieve pull requests from.     | Required            |
+| Option       | Description                                                                                    | Required / Optional | Default Value               |
+| -------------|:----------------------------------------------------------------------------------------------:|---------------------| --------------------------- |
+| wp-endpoint  | The WordPress posts endpoint the changelog will be posted at.                                  | Required            |                             |
+| start-marker | The text marker used to find the start of the changelog description inside the PR description. | Optional            | `<h2>Changelog Description` |
+| end-marker   | The text marker used to find the end of the changelog description inside the PR description.   | Optional            | `<h2>`                      |
+| wp-tag-ids   | A comma separated list of WordPress tag ids to add to the post                                 | Optional            |                             |
 
 ### Environment Variables
 
-| Option               | Description                                            | Required / Optional |
-| -------------------- |:------------------------------------------------------:|---------------------| 
-| CHANGELOG_POST_TOKEN | WordPress auth token required to post to the endpoint. | Required            |
+Most of these variables are already [built-in](https://circleci.com/docs/2.0/env-vars/#built-in-environment-variables) by CircleCI.
+
+| Option                  | Description                                            | Required / Optional |
+| ----------------------- |:------------------------------------------------------:|---------------------| 
+| CIRCLE_PROJECT_USERNAME | The GitHub username of the current project.            | Required            |
+| CIRCLE_PROJECT_REPONAME | The name of the repository of the current project.     | Required            |
+| WP_CHANGELOG_AUTH_TOKEN | WordPress auth token required to post to the endpoint. | Required            |
 
 ### Usage Example
 
 ```bash
 php scripts/github-changelog.php \
     --wp-endpoint=https://public-api.wordpress.com/wp/v2/sites/wpvipchangelog.wordpress.com/posts \
-    --gh-endpoint=https://api.github.com/repos/Automattic/vip-go-mu-plugins/pulls?per_page=10&sort=updated&direction=desc&state=closed \
     --wp-tag-ids=1784989
 ```
+
+In the example above, the following is to be expected:
+1. A post will be created on the `wpvipchangelog.wordpress.com` site.
+2. The post will be tagged with the tag of id `1784989`.
+3. The contents of the post should be all text in the PR description that is between the `<h2>Changelog Description` and `<h2>` markers.
