@@ -2,35 +2,43 @@
 
 require __DIR__ . '/../vendor/erusev/parsedown/Parsedown.php';
 
+function is_env_set() {
+    return isset(
+        $_SERVER[ 'CIRCLE_PROJECT_USERNAME' ],
+        $_SERVER[ 'CIRCLE_PROJECT_REPONAME' ],
+        $_SERVER[ 'WP_CHANGELOG_AUTH_TOKEN'],
+    );
+}
+
+if ( ! is_env_set() ) {
+    echo "The following environment variables need to be set:
+    \tCIRCLE_PROJECT_USERNAME
+    \tCIRCLE_PROJECT_REPONAME
+    \tWP_CHANGELOG_AUTH_TOKEN\n";
+    exit( 1 );   
+}
+
 $options = getopt( null, [
-    "gh-endpoint:",
-    "pr-header-prefix",
-    "pr-header:",
+    "start-marker:",
+    "end-marker:",
     "wp-endpoint:",
     "wp-tag-ids:",
 ] );
-
-if ( ! isset( $options[ "gh-endpoint" ] ) ) {
-    echo "Argument --gh-endpoint is mandatory.\n";
-    exit( 1 );   
-}
 
 if ( ! isset( $options[ "wp-endpoint" ] ) ) {
     echo "Argument --wp-endpoint is mandatory.\n";
     exit( 1 );   
 }
 
-if ( ! isset( $_SERVER['CHANGELOG_POST_TOKEN'] ) ) {
-    echo "The environment variable CHANGELOG_POST_TOKEN must be set.\n";
-    exit( 1 );   
-}
+define( 'PR_USERNAME', $_SERVER[ 'CIRCLE_PROJECT_USERNAME' ] );
+define( 'PR_REPONAME', $_SERVER[ 'CIRCLE_PROJECT_REPONAME' ] );
+define( 'WP_CHANGELOG_AUTH_TOKEN', $_SERVER[ 'WP_CHANGELOG_AUTH_TOKEN' ] );
 
-define( 'GITHUB_ENDPOINT', $options[ 'gh-endpoint' ] );
-define( 'PR_CHANGELOG_HEADER', $options[ 'pr-header' ] ?? '<h2>Changelog Description' );
-define( 'PR_DESCRIPTION_HEADER_PREFIX', $options[ 'pr-header-prefix' ] ?? '<h2>' );
-define( 'WP_CHANGELOG_AUTH_TOKEN', $_SERVER['CHANGELOG_POST_TOKEN'] );
+define( 'GITHUB_ENDPOINT', 'https://api.github.com/repos/' . PR_USERNAME . '/' . PR_REPONAME . '/pulls?per_page=10&sort=updated&direction=desc&state=closed');
+define( 'PR_CHANGELOG_START_MARKER', $options[ 'start-marker' ] ?? '<h2>Changelog Description' );
+define( 'PR_CHANGELOG_END_MARKER', $options[ 'end-marker' ] ?? '<h2>' );
 define( 'WP_CHANGELOG_ENDPOINT', $options[ 'wp-endpoint' ] );
-define( 'WP_CHANGELOG_TAG_IDS', $options['wp-tag-ids'] );
+define( 'WP_CHANGELOG_TAG_IDS', $options[ 'wp-tag-ids' ] );
 
 function fetch_last_PR() {
     $ch = curl_init( GITHUB_ENDPOINT );
@@ -50,11 +58,11 @@ function get_changelog_section_in_description_html( $description ) {
     $found_changelog_header = false;
     $result = '';
     foreach(preg_split("/\n/", $description) as $line){
-        if ( strpos($line, PR_CHANGELOG_HEADER) === 0 ) {
+        if ( strpos($line, PR_CHANGELOG_START_MARKER) === 0 ) {
             $found_changelog_header = true;
         } else if ( $found_changelog_header ) {
 
-            if ( strpos($line, PR_DESCRIPTION_HEADER_PREFIX) === 0 ) {
+            if ( strpos($line, PR_CHANGELOG_END_MARKER) === 0 ) {
                 // We have hit next section
                 break;
             }
