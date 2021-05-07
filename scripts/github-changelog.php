@@ -90,6 +90,10 @@ function get_changelog_html( $pr ) {
 
     $changelog_html = get_changelog_section_in_description_html( $description_html );
 
+    if ( empty( $changelog_html ) ) {
+        return NULL;
+    }
+
     if ( strpos($changelog_html, $pr['html_url']) === false ) {
         $changelog_html = $changelog_html . "\n\n" . $Parsedown->text( $pr['html_url'] );
     }
@@ -160,6 +164,12 @@ function create_changelog_for_last_PR() {
 
     $changelog_tags = get_changelog_tags( $pr[ 'labels' ] );
     $changelog_html = get_changelog_html( $pr );
+
+    if ( empty( $changelog_html ) ) {
+        echo "Skipping post. No changelog text found.\n";
+        exit( 0 );
+    }
+
     $changelog_record = parse_changelog_html( $changelog_html );
 
     create_draft_changelog( $changelog_record['title'], $changelog_record['content'], $changelog_tags );
