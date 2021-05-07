@@ -1,6 +1,6 @@
 <?php
 
-require __DIR__ . '/../vendor/erusev/parsedown/Parsedown.php';
+require "vendor/autoload.php";
 
 function is_env_set() {
     return isset(
