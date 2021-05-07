@@ -25,7 +25,8 @@ Extracts changelog information from the last closed Pull Request description and
 | wp-endpoint  | The WordPress posts endpoint the changelog will be posted at.                                  | Required            |                             |
 | start-marker | The text marker used to find the start of the changelog description inside the PR description. | Optional            | `<h2>Changelog Description` |
 | end-marker   | The text marker used to find the end of the changelog description inside the PR description.   | Optional            | `<h2>`                      |
-| wp-tag-ids   | A comma separated list of WordPress tag ids to add to the post                                 | Optional            |                             |
+| wp-status    | The WordPress post status.                                                                     | Optional            | `draft`                     |
+| wp-tag-ids   | A comma separated list of WordPress tag ids to add to the post.                                | Optional            |                             |
 
 ### Environment Variables
 

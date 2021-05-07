@@ -22,6 +22,7 @@ $options = getopt( null, [
     "start-marker:",
     "end-marker:",
     "wp-endpoint:",
+    "wp-status:",
     "wp-tag-ids:",
 ] );
 
@@ -39,6 +40,7 @@ define( 'GITHUB_ENDPOINT', 'https://api.github.com/repos/' . PR_USERNAME . '/' .
 define( 'PR_CHANGELOG_START_MARKER', $options[ 'start-marker' ] ?? '<h2>Changelog Description' );
 define( 'PR_CHANGELOG_END_MARKER', $options[ 'end-marker' ] ?? '<h2>' );
 define( 'WP_CHANGELOG_ENDPOINT', $options[ 'wp-endpoint' ] );
+define( 'WP_CHANGELOG_STATUS', $options[ 'wp-status' ] ?? 'draft' );
 define( 'WP_CHANGELOG_TAG_IDS', $options[ 'wp-tag-ids' ] );
 
 function fetch_last_PR() {
@@ -111,7 +113,7 @@ function create_draft_changelog( $title, $content, $tags ) {
         'title' => $title,
         'content' => $content,
         'excerpt' => $title,
-        'status' => 'draft',
+        'status' => WP_CHANGELOG_STATUS,
         'tags' => implode( ',', $tags ),
     ];
     $ch = curl_init( WP_CHANGELOG_ENDPOINT );
