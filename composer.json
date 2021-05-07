@@ -1,8 +1,11 @@
 {
     "name": "automattic/vip-build-tools",
     "description": "A collection of helpful build scripts for the WordPress VIP staff.",
-    "require-dev": {
-        "dealerdirect/phpcodesniffer-composer-installer": "^0.7.0",
+    "license": "MIT",
+    "require": {
         "erusev/parsedown": "^1.7"
+    },
+    "require-dev": {
+        "dealerdirect/phpcodesniffer-composer-installer": "^0.7.0"
     }
 }
