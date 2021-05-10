@@ -19,6 +19,7 @@ if ( ! is_env_set() ) {
 }
 
 $options = getopt( null, [
+    "link-to-pr",
     "start-marker:",
     "end-marker:",
     "wp-endpoint:",
@@ -42,6 +43,7 @@ define( 'PR_CHANGELOG_END_MARKER', $options[ 'end-marker' ] ?? '<h2>' );
 define( 'WP_CHANGELOG_ENDPOINT', $options[ 'wp-endpoint' ] );
 define( 'WP_CHANGELOG_STATUS', $options[ 'wp-status' ] ?? 'draft' );
 define( 'WP_CHANGELOG_TAG_IDS', $options[ 'wp-tag-ids' ] );
+define( 'LINK_TO_PR', $options[ 'link-to-pr' ] ?? true );
 
 function fetch_last_PR() {
     $ch = curl_init( GITHUB_ENDPOINT );
@@ -62,7 +64,7 @@ function fetch_last_PR() {
     $last_prs = json_decode( $data, true );
     $merged_prs = array_filter( $last_prs, function ( $pr ) { return $pr['merged_at'] ?? ''; } );
 
-    return $merged_prs[ 0 ];
+    return array_values( $merged_prs )[ 0 ];
 }
 
 function get_changelog_section_in_description_html( $description ) {
@@ -94,7 +96,7 @@ function get_changelog_html( $pr ) {
         return NULL;
     }
 
-    if ( strpos($changelog_html, $pr['html_url']) === false ) {
+    if ( LINK_TO_PR && strpos($changelog_html, $pr['html_url']) === false ) {
         $changelog_html = $changelog_html . "\n\n" . $Parsedown->text( $pr['html_url'] );
     }
     return $changelog_html;
