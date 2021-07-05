@@ -32,12 +32,13 @@ if ( ! isset( $options[ "wp-endpoint" ] ) ) {
     exit( 1 );   
 }
 
-define( 'PR_USERNAME', $_SERVER[ 'CIRCLE_PROJECT_USERNAME' ] );
-define( 'PR_REPONAME', $_SERVER[ 'CIRCLE_PROJECT_REPONAME' ] );
+define( 'SHA1', $_SERVER[ 'CIRCLE_SHA1' ] );
+define( 'PROJECT_USERNAME', $_SERVER[ 'CIRCLE_PROJECT_USERNAME' ] );
+define( 'PROJECT_REPONAME', $_SERVER[ 'CIRCLE_PROJECT_REPONAME' ] );
 define( 'CHANGELOG_POST_TOKEN', $_SERVER[ 'CHANGELOG_POST_TOKEN' ] );
 define( 'GITHUB_TOKEN', $_SERVER[ 'GITHUB_TOKEN' ] );
 
-define( 'GITHUB_ENDPOINT', 'https://api.github.com/repos/' . PR_USERNAME . '/' . PR_REPONAME . '/pulls?per_page=10&sort=updated&direction=desc&state=closed');
+define( 'GITHUB_ENDPOINT', 'https://api.github.com/repos/' . PROJECT_USERNAME . '/' . PROJECT_REPONAME . '/pulls?per_page=10&sort=updated&direction=desc&state=closed');
 define( 'PR_CHANGELOG_START_MARKER', $options[ 'start-marker' ] ?? '<h2>Changelog Description' );
 define( 'PR_CHANGELOG_END_MARKER', $options[ 'end-marker' ] ?? '<h2>' );
 define( 'WP_CHANGELOG_ENDPOINT', $options[ 'wp-endpoint' ] );
@@ -162,6 +163,11 @@ function create_changelog_for_last_PR() {
     if ( ! isset( $pr[ 'id' ] ) ) {
         echo "Failed to retrieve last closed pull request.\n";
         exit( 1 );
+    }
+
+    if ( $pr[ 'merge_commit_sha' ] != SHA1 ) {
+        echo "Skipping post. Build not triggered from a merged pull request.\n";
+        exit( 0 );
     }
 
     $changelog_tags = get_changelog_tags( $pr[ 'labels' ] );
