@@ -25,6 +25,7 @@ $options = getopt( null, [
     "wp-endpoint:",
     "wp-status:",
     "wp-tag-ids:",
+    "wp-title-prefix:",
 ] );
 
 if ( ! isset( $options[ "wp-endpoint" ] ) ) {
@@ -44,6 +45,7 @@ define( 'PR_CHANGELOG_END_MARKER', $options[ 'end-marker' ] ?? '<h2>' );
 define( 'WP_CHANGELOG_ENDPOINT', $options[ 'wp-endpoint' ] );
 define( 'WP_CHANGELOG_STATUS', $options[ 'wp-status' ] ?? 'draft' );
 define( 'WP_CHANGELOG_TAG_IDS', $options[ 'wp-tag-ids' ] );
+define( 'WP_TITLE_PREFIX', $options[ 'wp-title-prefix' ] ?? '' );
 define( 'LINK_TO_PR', $options[ 'link-to-pr' ] ?? true );
 
 function fetch_last_PR() {
@@ -103,14 +105,14 @@ function get_changelog_html( $pr ) {
     return $changelog_html;
 }
 
-function parse_changelog_html( $changelog_html ) {
+function parse_changelog_html( $changelog_html, $prefix = '' ) {
     preg_match('/<h3>(.*)<\/h3>/', $changelog_html, $matches);
 
     // Remove the header from html. WP will add the title there.
     $content_changelog_html = str_replace( $matches[0], '', $changelog_html );
 
     return [
-        'title' => $matches[1],
+        'title' => $prefix . $matches[1],
         'content' => $content_changelog_html,
     ];
 }
@@ -178,7 +180,7 @@ function create_changelog_for_last_PR() {
         exit( 0 );
     }
 
-    $changelog_record = parse_changelog_html( $changelog_html );
+    $changelog_record = parse_changelog_html( $changelog_html, WP_TITLE_PREFIX );
 
     create_draft_changelog( $changelog_record['title'], $changelog_record['content'], $changelog_tags );
     echo "\n\nAll done!";
