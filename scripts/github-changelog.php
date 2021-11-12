@@ -15,7 +15,7 @@ if ( ! is_env_set() ) {
     \tCIRCLE_PROJECT_USERNAME
     \tCIRCLE_PROJECT_REPONAME
     \tCHANGELOG_POST_TOKEN\n";
-    exit( 1 );   
+    exit( 1 );
 }
 
 $options = getopt( null, [
@@ -25,18 +25,20 @@ $options = getopt( null, [
     "wp-endpoint:",
     "wp-status:",
     "wp-tag-ids:",
+    "verify-commit-hash",
+    "debug",
 ] );
 
 if ( ! isset( $options[ "wp-endpoint" ] ) ) {
     echo "Argument --wp-endpoint is mandatory.\n";
-    exit( 1 );   
+    exit( 1 );
 }
 
 define( 'SHA1', $_SERVER[ 'CIRCLE_SHA1' ] );
 define( 'PROJECT_USERNAME', $_SERVER[ 'CIRCLE_PROJECT_USERNAME' ] );
 define( 'PROJECT_REPONAME', $_SERVER[ 'CIRCLE_PROJECT_REPONAME' ] );
 define( 'CHANGELOG_POST_TOKEN', $_SERVER[ 'CHANGELOG_POST_TOKEN' ] );
-define( 'GITHUB_TOKEN', $_SERVER[ 'GITHUB_TOKEN' ] );
+define( 'GITHUB_TOKEN', $_SERVER[ 'GITHUB_TOKEN' ] ?? '' );
 
 define( 'GITHUB_ENDPOINT', 'https://api.github.com/repos/' . PROJECT_USERNAME . '/' . PROJECT_REPONAME . '/pulls?per_page=10&sort=updated&direction=desc&state=closed');
 define( 'PR_CHANGELOG_START_MARKER', $options[ 'start-marker' ] ?? '<h2>Changelog Description' );
@@ -45,6 +47,16 @@ define( 'WP_CHANGELOG_ENDPOINT', $options[ 'wp-endpoint' ] );
 define( 'WP_CHANGELOG_STATUS', $options[ 'wp-status' ] ?? 'draft' );
 define( 'WP_CHANGELOG_TAG_IDS', $options[ 'wp-tag-ids' ] );
 define( 'LINK_TO_PR', $options[ 'link-to-pr' ] ?? true );
+define( 'VERIFY_COMMIT_HASH', $options[ 'verify-commit-hash' ] ?? true );
+define( 'DEBUG', array_key_exists( 'debug', $options ) );
+
+function debug( $arg ) {
+    if ( ! DEBUG ) {
+        return;
+    }
+
+    echo "DEBUG: " . print_r( $arg, true );
+}
 
 function fetch_last_PR() {
     $ch = curl_init( GITHUB_ENDPOINT );
@@ -123,6 +135,9 @@ function create_draft_changelog( $title, $content, $tags ) {
         'status' => WP_CHANGELOG_STATUS,
         'tags' => implode( ',', $tags ),
     ];
+
+    debug( $fields );
+
     $ch = curl_init( WP_CHANGELOG_ENDPOINT );
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
     curl_setopt($ch, CURLOPT_POST, true);
@@ -165,7 +180,7 @@ function create_changelog_for_last_PR() {
         exit( 1 );
     }
 
-    if ( $pr[ 'merge_commit_sha' ] != SHA1 ) {
+    if ( VERIFY_COMMIT_HASH && $pr[ 'merge_commit_sha' ] != SHA1 ) {
         echo "Skipping post. Build not triggered from a merged pull request.\n";
         exit( 0 );
     }
