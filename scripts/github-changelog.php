@@ -180,7 +180,7 @@ function create_changelog_for_last_PR() {
         exit( 1 );
     }
 
-    if ( VERIFY_COMMIT_HASH && $pr[ 'merge_commit_sha' ] != SHA1 ) {
+    if ( VERIFY_COMMIT_HASH && $pr[ 'merge_commit_sha' ] !== SHA1 ) {
         echo "Skipping post. Build not triggered from a merged pull request.\n";
         exit( 0 );
     }
