@@ -19,14 +19,14 @@ if ( ! is_env_set() ) {
 }
 
 $options = getopt( null, [
-    "link-to-pr",
-    "start-marker:",
-    "end-marker:",
-    "wp-endpoint:",
-    "wp-status:",
-    "wp-tag-ids:",
-    "verify-commit-hash",
-    "debug",
+    "link-to-pr", // Add link to the PR at the button of the changelog entry
+    "start-marker:", // Text bellow line matching this param will be considered changelog entry
+    "end-marker:", // Text untill this line will be considered changelog entry
+    "wp-endpoint:", // Endpoint to wordpress site to create posts for
+    "wp-status:", // Status to create changelog post with. Common scenarios are 'draft' or 'published'
+    "wp-tag-ids:", // Default tag IDs to add to the changelog post
+    "verify-commit-hash", // Use --verify-commit-hash=false in order to skip hash validation. This is usefull when testing the integration
+    "debug", // Show debug information
 ] );
 
 if ( ! isset( $options[ "wp-endpoint" ] ) ) {
