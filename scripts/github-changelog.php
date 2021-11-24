@@ -201,7 +201,7 @@ function create_changelog_for_last_PR() {
     $changelog_channels = get_changelog_channels();
     $changelog_html = get_changelog_html( $pr );
 
-    if ( empty( $changelog_html ) && false ) {
+    if ( empty( $changelog_html ) ) {
         echo "Skipping post. No changelog text found.\n";
         exit( 0 );
     }
