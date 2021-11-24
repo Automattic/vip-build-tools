@@ -25,5 +25,6 @@ jobs:
             php $HOME/project/scripts/github-changelog.php \
                 --wp-endpoint=https://public-api.wordpress.com/wp/v2/sites/wpvipchangelog.wordpress.com/posts \
                 --wp-tag-ids=1784989 \
+                --wp-channel-ids=267076 \
                 --verify-commit-hash=false \
                 --debug
