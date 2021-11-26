@@ -25,6 +25,7 @@ $options = getopt( null, [
     "wp-endpoint:", // Endpoint to wordpress site to create posts for
     "wp-status:", // Status to create changelog post with. Common scenarios are 'draft' or 'published'
     "wp-tag-ids:", // Default tag IDs to add to the changelog post
+    "wp-channel-ids:", // Channel IDs to add to the changelog post
     "verify-commit-hash", // Use --verify-commit-hash=false in order to skip hash validation. This is usefull when testing the integration
     "debug", // Show debug information
 ] );
@@ -46,6 +47,7 @@ define( 'PR_CHANGELOG_END_MARKER', $options[ 'end-marker' ] ?? '<h2>' );
 define( 'WP_CHANGELOG_ENDPOINT', $options[ 'wp-endpoint' ] );
 define( 'WP_CHANGELOG_STATUS', $options[ 'wp-status' ] ?? 'draft' );
 define( 'WP_CHANGELOG_TAG_IDS', $options[ 'wp-tag-ids' ] );
+define( 'WP_CHANGELOG_CHANNEL_IDS', $options[ 'wp-channel-ids' ] );
 define( 'LINK_TO_PR', $options[ 'link-to-pr' ] ?? true );
 define( 'VERIFY_COMMIT_HASH', $options[ 'verify-commit-hash' ] ?? true );
 define( 'DEBUG', array_key_exists( 'debug', $options ) );
@@ -127,7 +129,7 @@ function parse_changelog_html( $changelog_html ) {
     ];
 }
 
-function create_draft_changelog( $title, $content, $tags ) {
+function create_changelog_post( $title, $content, $tags, $channels ) {
     $fields = [
         'title' => $title,
         'content' => $content,
@@ -135,6 +137,10 @@ function create_draft_changelog( $title, $content, $tags ) {
         'status' => WP_CHANGELOG_STATUS,
         'tags' => implode( ',', $tags ),
     ];
+
+    if ( $channels ) {
+        $fields['release-channel'] = implode( ',', $channels );
+    }
 
     debug( $fields );
 
@@ -172,6 +178,12 @@ function get_changelog_tags( $github_labels ) {
     return $tags;
 }
 
+function get_changelog_channels() {
+    return array_filter( explode( ",", WP_CHANGELOG_CHANNEL_IDS), function( $channel ) {
+        return !! $channel;
+    } );
+}
+
 function create_changelog_for_last_PR() {
     $pr = fetch_last_PR();
 
@@ -186,6 +198,7 @@ function create_changelog_for_last_PR() {
     }
 
     $changelog_tags = get_changelog_tags( $pr[ 'labels' ] );
+    $changelog_channels = get_changelog_channels();
     $changelog_html = get_changelog_html( $pr );
 
     if ( empty( $changelog_html ) ) {
@@ -195,7 +208,7 @@ function create_changelog_for_last_PR() {
 
     $changelog_record = parse_changelog_html( $changelog_html );
 
-    create_draft_changelog( $changelog_record['title'], $changelog_record['content'], $changelog_tags );
+    create_changelog_post( $changelog_record['title'], $changelog_record['content'], $changelog_tags, $changelog_channels );
     echo "\n\nAll done!";
 }
 
