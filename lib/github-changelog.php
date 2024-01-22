@@ -62,7 +62,7 @@ function get_changelog_html( $pr ) {
 	if ( LINK_TO_PR && strpos($changelog_html, $pr['html_url']) === false ) {
 		$changelog_html = $changelog_html . "\n\n" . $Parsedown->text( $pr['html_url'] );
 	}
-	return $changelog_html;
+	return trim( $changelog_html );
 }
 
 function parse_changelog_html( $changelog_html ) {
