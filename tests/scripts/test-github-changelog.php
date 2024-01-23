@@ -12,7 +12,7 @@ define( 'LINK_TO_PR', false );
 
 class GitHub_Changelog_Test extends TestCase {
 	public function test_get_changelog_html(): void {
-		$pr = [];
+		$pr = array();
 
 		$pr['body'] = '# Description
 		
@@ -39,11 +39,14 @@ Foo Bar!';
 
 		$changelog = get_changelog_html( $pr );
 
-		$this->assertEquals( '<h3>This is my changelog title</h3>
+		$this->assertEquals(
+			'<h3>This is my changelog title</h3>
 <p>Things we did:</p>
 <ul>
 <li>Fixed a bug</li>
 <li>Fixed another bug</li>
-</ul>', $changelog );
+</ul>',
+			$changelog 
+		);
 	}
 }
