@@ -40,10 +40,10 @@ if ( ! isset( $options['wp-endpoint'] ) ) {
 	exit( 1 );
 }
 
-define( 'SHA1', $_SERVER['CIRCLE_SHA1'] );
-define( 'PROJECT_USERNAME', $_SERVER['CIRCLE_PROJECT_USERNAME'] );
-define( 'PROJECT_REPONAME', $_SERVER['CIRCLE_PROJECT_REPONAME'] );
-define( 'CHANGELOG_POST_TOKEN', $_SERVER['CHANGELOG_POST_TOKEN'] );
+define( 'SHA1', $_SERVER['CIRCLE_SHA1'] ?? '' );
+define( 'PROJECT_USERNAME', $_SERVER['CIRCLE_PROJECT_USERNAME'] ?? '' );
+define( 'PROJECT_REPONAME', $_SERVER['CIRCLE_PROJECT_REPONAME'] ?? '' );
+define( 'CHANGELOG_POST_TOKEN', $_SERVER['CHANGELOG_POST_TOKEN'] ?? '' );
 define( 'GITHUB_TOKEN', $_SERVER['GITHUB_TOKEN'] ?? '' );
 
 define( 'GITHUB_ENDPOINT', 'https://api.github.com/repos/' . PROJECT_USERNAME . '/' . PROJECT_REPONAME . '/pulls?per_page=10&sort=updated&direction=desc&state=closed' );
@@ -57,4 +57,4 @@ define( 'LINK_TO_PR', $options['link-to-pr'] ?? true );
 define( 'VERIFY_COMMIT_HASH', $options['verify-commit-hash'] ?? true );
 define( 'DEBUG', array_key_exists( 'debug', $options ) );
 
-create_changelog_for_last_PR();
+create_changelog_for_last_pr();

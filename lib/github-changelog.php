@@ -8,7 +8,7 @@ function debug( $arg ) {
 	echo 'DEBUG: ' . print_r( $arg, true );
 }
 
-function fetch_last_PR() {
+function fetch_last_pr() {
 	$ch      = curl_init( GITHUB_ENDPOINT );
 	$headers = array( 'User-Agent: script' );
 
@@ -54,9 +54,9 @@ function get_changelog_section_in_description_html( $description ) {
 }
 
 function get_changelog_html( $pr ) {
-	$Parsedown        = new Parsedown();
+	$parsedown        = new Parsedown();
 	$body             = preg_replace( '/<!--(.|\s)*?-->/', '', $pr['body'] );
-	$description_html = $Parsedown->text( $body );
+	$description_html = $parsedown->text( $body );
 
 	$changelog_html = get_changelog_section_in_description_html( $description_html );
 
@@ -65,7 +65,7 @@ function get_changelog_html( $pr ) {
 	}
 
 	if ( LINK_TO_PR && strpos( $changelog_html, $pr['html_url'] ) === false ) {
-		$changelog_html = $changelog_html . "\n\n" . $Parsedown->text( $pr['html_url'] );
+		$changelog_html = $changelog_html . "\n\n" . $parsedown->text( $pr['html_url'] );
 	}
 	return trim( $changelog_html );
 }
@@ -140,15 +140,15 @@ function get_changelog_channels() {
 	);
 }
 
-function create_changelog_for_last_PR() {
-	$pr = fetch_last_PR();
+function create_changelog_for_last_pr() {
+	$pr = fetch_last_pr();
 
 	if ( ! isset( $pr['id'] ) ) {
 		echo "Failed to retrieve last closed pull request.\n";
 		exit( 1 );
 	}
 
-	if ( VERIFY_COMMIT_HASH && $pr['merge_commit_sha'] !== SHA1 ) {
+	if ( VERIFY_COMMIT_HASH && SHA1 !== $pr['merge_commit_sha'] ) {
 		echo "Skipping post. Build not triggered from a merged pull request.\n";
 		exit( 0 );
 	}
