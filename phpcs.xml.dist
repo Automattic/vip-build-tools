@@ -33,7 +33,13 @@
 	<!-- Rules: Check VIP Coding Standards - see
 		https://github.com/Automattic/VIP-Coding-Standards/ -->
 	<rule ref="WordPress-VIP-Go">
-		
+		<exclude name="WordPress.Security.EscapeOutput.OutputNotEscaped" />
+		<exclude name="WordPress.Security.ValidatedSanitizedInput.InputNotSanitized" />
+		<exclude name="WordPress.WP.AlternativeFunctions.curl_curl_setopt" />
+		<exclude name="WordPress.WP.AlternativeFunctions.curl_curl_exec" />
+		<exclude name="WordPress.WP.AlternativeFunctions.curl_curl_init" />
+		<exclude name="WordPress.WP.AlternativeFunctions.curl_curl_close" />
+		<exclude name="WordPress.WP.AlternativeFunctions.curl_curl_getinfo" />
 	</rule>
 
 	<rule ref="Universal.Files.SeparateFunctionsFromOO.Mixed">

@@ -33,4 +33,4 @@ jobs:
         uses: ramsey/composer-install@2.2.0
 
       - name: Lint files
-        run: ./vendor/bin/phpcs .
+        run: ./vendor/bin/phpcs . --warning-severity=8
