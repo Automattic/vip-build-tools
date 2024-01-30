@@ -6,6 +6,8 @@
         "erusev/parsedown": "^1.7"
     },
     "require-dev": {
-        "dealerdirect/phpcodesniffer-composer-installer": "^0.7.0"
+        "dealerdirect/phpcodesniffer-composer-installer": "^0.7.0",
+        "phpunit/phpunit": "^9",
+        "automattic/vipwpcs": "3.0.0"
     }
 }
