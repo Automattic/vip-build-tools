@@ -73,7 +73,7 @@ function get_changelog_html( $pr ) {
 function parse_changelog_html( $changelog_html ) {
 	preg_match( '/<h3>(.*)<\/h3>/', $changelog_html, $matches );
 
-	$title = $matches[1];
+	$title = $matches[1] ?? null;
 
 	$known_sections = array(
 		'Fixed',

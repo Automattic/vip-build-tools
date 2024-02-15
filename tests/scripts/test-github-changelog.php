@@ -71,4 +71,15 @@ Foo Bar!';
 			$parsed['content'] 
 		);
 	}
+
+	public function test_parse_changelog_html_with_no_title_found(): void {
+		$pr = array();
+
+		$html = 'this is the html of my changelog, it does not contain a title so it needs to autogenerate';
+
+		$parsed = parse_changelog_html( $html );
+
+		$this->assertEquals( gmdate( 'F jS, Y H:i' ), $parsed['title'] );
+		$this->assertEquals( $html, $parsed['content'] );
+	}
 }
