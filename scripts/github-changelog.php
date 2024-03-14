@@ -29,6 +29,7 @@ $options = getopt(
 		'wp-endpoint:', // Endpoint to wordpress site to create posts for
 		'wp-status:', // Status to create changelog post with. Common scenarios are 'draft' or 'published'
 		'wp-tag-ids:', // Default tag IDs to add to the changelog post
+		'wp-categories:', // Default categories to add to the changelog post
 		'wp-channel-ids:', // Channel IDs to add to the changelog post
 		'verify-commit-hash', // Use --verify-commit-hash=false in order to skip hash validation. This is usefull when testing the integration
 		'debug', // Show debug information
@@ -52,6 +53,7 @@ define( 'PR_CHANGELOG_END_MARKER', $options['end-marker'] ?? '<h2>' );
 define( 'WP_CHANGELOG_ENDPOINT', $options['wp-endpoint'] );
 define( 'WP_CHANGELOG_STATUS', $options['wp-status'] ?? 'draft' );
 define( 'WP_CHANGELOG_TAG_IDS', $options['wp-tag-ids'] );
+define( 'WP_CHANGELOG_CATEGORIES', $options['wp-categories'] );
 define( 'WP_CHANGELOG_CHANNEL_IDS', $options['wp-channel-ids'] );
 define( 'LINK_TO_PR', $options['link-to-pr'] ?? true );
 define( 'VERIFY_COMMIT_HASH', $options['verify-commit-hash'] ?? true );
