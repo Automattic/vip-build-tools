@@ -61,7 +61,7 @@ Foo Bar!';
 
 		$parsed = parse_changelog_html( $html );
 
-		$this->assertEquals( gmdate( 'F jS, Y H:i' ), $parsed['title'] );
+		$this->assertEquals( gmdate( 'o-m-d H:i' ), $parsed['title'] );
 		$this->assertEquals(
 			'<h3>Fixed</h3>
 <ul>
@@ -79,7 +79,7 @@ Foo Bar!';
 
 		$parsed = parse_changelog_html( $html );
 
-		$this->assertEquals( gmdate( 'F jS, Y H:i' ), $parsed['title'] );
+		$this->assertEquals( gmdate( 'o-m-d H:i' ), $parsed['title'] );
 		$this->assertEquals( $html, $parsed['content'] );
 	}
 }

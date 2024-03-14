@@ -86,7 +86,7 @@ function parse_changelog_html( $changelog_html ) {
 
 	// If no title was found, or if the found "title" is one of our known section headers, then generate one using the current time
 	if ( ! $title || in_array( $title, $known_sections ) ) {
-		$title = gmdate( 'F jS, Y H:i' );
+		$title = gmdate( 'o-m-d H:i' );
 	} else {
 		// Remove the header from html. WP will add the title there.
 		$content_changelog_html = str_replace( $matches[0], '', $changelog_html );
