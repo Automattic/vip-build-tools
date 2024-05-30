@@ -98,18 +98,25 @@ function parse_changelog_html( $changelog_html ) {
 	);
 }
 
-function create_changelog_post( $title, $content, $tags, $channels ) {
+function build_changelog_request_body( $title, $content, $tags, $channels, $categories ) {
 	$fields = array(
-		'title'   => $title,
-		'content' => $content,
-		'excerpt' => $title,
-		'status'  => WP_CHANGELOG_STATUS,
-		'tags'    => implode( ',', $tags ),
+		'title'      => $title,
+		'content'    => $content,
+		'excerpt'    => $title,
+		'status'     => WP_CHANGELOG_STATUS,
+		'tags'       => implode( ',', $tags ),
+		'categories' => $categories,
 	);
 
 	if ( $channels ) {
 		$fields['release-channel'] = implode( ',', $channels );
 	}
+
+	return $fields;
+}
+
+function create_changelog_post( $title, $content, $tags, $channels, $categories ) {
+	$fields = build_changelog_request_body( $title, $content, $tags, $channels, $categories );
 
 	debug( $fields );
 
@@ -147,6 +154,20 @@ function get_changelog_tags( $github_labels ) {
 	return $tags;
 }
 
+function get_changelog_categories() {
+	$categories = explode( ',', WP_CHANGELOG_CATEGORIES );
+
+	$filtered = array_filter(
+		$categories,
+		function ( $category ) {
+			return (bool) $category;
+		}
+	);
+
+	// Pass through array_values() to reset the array indexes, which are left intact after array_filter()
+	return array_values( $filtered );
+}
+
 function get_changelog_channels() {
 	return array_filter(
 		explode( ',', WP_CHANGELOG_CHANNEL_IDS ),
@@ -169,9 +190,10 @@ function create_changelog_for_last_pr() {
 		exit( 0 );
 	}
 
-	$changelog_tags     = get_changelog_tags( $pr['labels'] );
-	$changelog_channels = get_changelog_channels();
-	$changelog_html     = get_changelog_html( $pr );
+	$changelog_tags       = get_changelog_tags( $pr['labels'] );
+	$changelog_categories = get_changelog_categories();
+	$changelog_channels   = get_changelog_channels();
+	$changelog_html       = get_changelog_html( $pr );
 
 	if ( empty( $changelog_html ) ) {
 		echo "Skipping post. No changelog text found.\n";
@@ -180,6 +202,6 @@ function create_changelog_for_last_pr() {
 
 	$changelog_record = parse_changelog_html( $changelog_html );
 
-	create_changelog_post( $changelog_record['title'], $changelog_record['content'], $changelog_tags, $changelog_channels );
+	create_changelog_post( $changelog_record['title'], $changelog_record['content'], $changelog_tags, $changelog_channels, $changelog_categories );
 	echo "\n\nAll done!";
 }
