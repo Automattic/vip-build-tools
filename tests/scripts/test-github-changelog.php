@@ -81,7 +81,7 @@ Foo Bar!';
 			'excerpt'         => $title,
 			'status'          => 'publish',
 			'tags'            => implode( ',', $tags ),
-			'categories'      => $categories,
+			'categories'      => implode( ',', $categories ),
 			'release-channel' => implode( ',', $channels ),
 		);
 
