@@ -34,7 +34,13 @@ function fetch_last_pr() {
 		}
 	);
 
-	return array_values( $merged_prs )[0];
+	$merged_prs_array = array_values( $merged_prs );
+
+	if ( empty( $merged_prs_array ) ) {
+		return null;
+	}
+
+	return $merged_prs_array[0];
 }
 
 function fetch_pr( $pr_id ) {
@@ -419,12 +425,13 @@ function aggregate_changelog_headings( string $html ): string {
  */
 function create_changelog_for_last_release() {
 	$releases = fetch_releases( 1 );
-	$release  = $releases[0];
 
-	if ( ! isset( $release['id'] ) ) {
-		echo "Failed to retrieve last release.\n";
-		exit( 1 );
+	if ( empty( $releases ) ) {
+		echo "No releases found.\n";
+		exit( 0 );
 	}
+
+	$release  = $releases[0];
 
 	if ( ! isset( $release['body'] ) ) {
 		echo "No body found for the latest release.\n";
