@@ -60,7 +60,7 @@ define( 'LINK_TO_PR', ( $options['link-to-pr'] ?? 'true' ) !== 'false' );
 define( 'VERIFY_COMMIT_HASH', $options['verify-commit-hash'] ?? true );
 define( 'DEBUG', array_key_exists( 'debug', $options ) );
 
-if ( isset( $options['changelog-source'] ) && $options['changelog-source'] === 'last-release' ) {
+if ( isset( $options['changelog-source'] ) && 'last-release' === $options['changelog-source'] ) {
 	create_changelog_for_last_release();
 } else {
 	create_changelog_for_last_pr();

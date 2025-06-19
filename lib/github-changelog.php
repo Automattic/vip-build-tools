@@ -371,38 +371,40 @@ function aggregate_changelog_headings( string $html ): string {
 	}
 	libxml_clear_errors();
 
+	// phpcs:disable WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase
 	$root = $dom->getElementsByTagName( 'body' )->item( 0 ) ?? $dom->documentElement;
 	if ( ! $root ) {
 		return $html;
 	}
 
 	$aggregated     = array();
-	$currentHeading = null;
+	$current_heading = null;
 
 	foreach ( $root->childNodes as $node ) {
-		if ( $node->nodeType !== XML_ELEMENT_NODE ) {
+		if ( XML_ELEMENT_NODE !== $node->nodeType ) {
 			continue;
 		}
 
-		if ( $node->nodeName === 'h3' ) {
-			$currentHeading                  = $node->textContent;
-			$aggregated[ $currentHeading ] ??= array();
+		if ( 'h3' === $node->nodeName ) {
+			$current_heading                  = $node->textContent;
+			$aggregated[ $current_heading ] ??= array();
 			continue;
 		}
 
-		if ( ! $currentHeading ) {
+		if ( ! $current_heading ) {
 			continue;
 		}
 
 		// Handle ul and p elements
-		if ( $node->nodeName === 'ul' ) {
+		if ( 'ul' === $node->nodeName ) {
 			foreach ( $node->getElementsByTagName( 'li' ) as $li ) {
-				$aggregated[ $currentHeading ][] = trim( $dom->saveHTML( $li ) );
+				$aggregated[ $current_heading ][] = trim( $dom->saveHTML( $li ) );
 			}
-		} elseif ( $node->nodeName === 'p' ) {
-			$aggregated[ $currentHeading ][] = trim( $dom->saveHTML( $node ) );
+		} elseif ( 'p' === $node->nodeName ) {
+			$aggregated[ $current_heading ][] = trim( $dom->saveHTML( $node ) );
 		}
 	}
+	// phpcs:enable WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase
 
 	$output = '';
 	foreach ( $aggregated as $heading => $items ) {
