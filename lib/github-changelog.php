@@ -29,7 +29,7 @@ function fetch_last_pr() {
 		$last_prs,
 		function ( $pr ) {
 			return $pr['merged_at'] ?? '';
-		} 
+		}
 	);
 
 	return array_values( $merged_prs )[0];
@@ -105,7 +105,7 @@ function build_changelog_request_body( $title, $content, $tags, $channels, $cate
 		'excerpt'    => $title,
 		'status'     => WP_CHANGELOG_STATUS,
 		'tags'       => implode( ',', $tags ),
-		'categories' => $categories,
+		'categories' => implode( ',', $categories ),
 	);
 
 	if ( $channels ) {
@@ -173,7 +173,7 @@ function get_changelog_channels() {
 		explode( ',', WP_CHANGELOG_CHANNEL_IDS ),
 		function ( $channel ) {
 			return ! ! $channel;
-		} 
+		}
 	);
 }
 
