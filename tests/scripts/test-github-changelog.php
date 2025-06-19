@@ -46,7 +46,7 @@ Foo Bar!';
 <li>Fixed a bug</li>
 <li>Fixed another bug</li>
 </ul>',
-			$changelog 
+			$changelog
 		);
 	}
 
@@ -106,7 +106,7 @@ Foo Bar!';
 <li>Fixed a bug</li>
 <li>Fixed another bug</li>
 </ul>',
-			$parsed['content'] 
+			$parsed['content']
 		);
 	}
 
@@ -119,5 +119,76 @@ Foo Bar!';
 
 		$this->assertEquals( gmdate( 'o-m-d H:i' ), $parsed['title'] );
 		$this->assertEquals( $html, $parsed['content'] );
+	}
+
+	/**
+	 * @dataProvider changelog_html_provider
+	 */
+	public function test_aggregate_changelog_headings( string $input, string $expected ) {
+		$this->assertEquals(
+			$expected,
+			aggregate_changelog_headings( $input )
+		);
+	}
+
+	public function changelog_html_provider(): array {
+		return array(
+			'original test case'       => array(
+				'<h3>Fixed</h3>
+				<ul>
+				<li>Fixed a bug</li>
+				</ul>
+				<h3>Added</h3>
+				<ul>
+				<li>Added a feature</li>
+				<li>Added another feature</li>
+				</ul>
+				<h3>Fixed</h3>
+				<ul>
+				<li>Fixed another bug</li>
+				</ul>
+				<h3>Added</h3>
+				<p>Added yet another feature</p>',
+				'<h3>Fixed</h3>
+<ul>
+<li>Fixed a bug</li>
+<li>Fixed another bug</li>
+</ul>
+<h3>Added</h3>
+<ul>
+<li>Added a feature</li>
+<li>Added another feature</li>
+<li>Added yet another feature</li>
+</ul>',
+			),
+			'empty input'              => array(
+				'',
+				'',
+			),
+			'single heading'           => array(
+				'<h3>Fixed</h3>',
+				'',
+			),
+			'content without headings' => array(
+				'<p>Some content</p>',
+				'',
+			),
+			'content with code tags'   => array(
+				'<h3>Fixed</h3>
+				<ul>
+				<li>Fixed a bug in <code>function()</code></li>
+				</ul>
+				<h3>Added</h3>
+				<p>Added a <code>feature</code></p>',
+				'<h3>Fixed</h3>
+<ul>
+<li>Fixed a bug in <code>function()</code></li>
+</ul>
+<h3>Added</h3>
+<ul>
+<li>Added a <code>feature</code></li>
+</ul>',
+			),
+		);
 	}
 }
