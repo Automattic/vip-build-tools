@@ -9,11 +9,13 @@ function debug( $arg ) {
 }
 
 function make_github_request( $url, $headers = array() ) {
-	$ch = curl_init( $url );
-	if ( isset( $_SERVER['GITHUB_TOKEN'] ) ) {
-		array_push( $headers, 'Authorization:token ' . GITHUB_TOKEN );
-	}
+	$ch      = curl_init( $url );
 	$headers = array_merge( $headers, array( 'User-Agent: script' ) );
+
+	if ( isset( $_SERVER['GITHUB_TOKEN'] ) ) {
+		$headers = array_merge( $headers, array( 'Authorization:token ' . GITHUB_TOKEN ) );
+	}
+
 	curl_setopt( $ch, CURLOPT_HEADER, 0 );
 	curl_setopt( $ch, CURLOPT_RETURNTRANSFER, true );
 	curl_setopt( $ch, CURLOPT_HTTPHEADER, $headers );
@@ -80,7 +82,7 @@ function get_changelog_section_in_description_html( $description ) {
  * @return string The changelog HTML
  */
 function get_changelog_html( $pr, $link_to_pr = LINK_TO_PR ) {
-	if ( ! isset( $pr['body'] ) || empty( $pr['body'] ) ) {
+	if ( empty( $pr['body'] ) ) {
 		return null;
 	}
 
@@ -304,8 +306,8 @@ function fetch_releases( $count = 1 ) {
  * @return array The fetched PRs
  */
 function fetch_prs_by_ids( $pr_ids ) {
-	$prs = array();
-	$fetched_ids   = array();
+	$prs         = array();
+	$fetched_ids = array();
 
 	foreach ( $pr_ids as $pr_id ) {
 		// Skip if we've already fetched this PR
@@ -404,13 +406,14 @@ function aggregate_changelog_headings( string $html ): string {
 
 	$output = '';
 	foreach ( $aggregated as $heading => $items ) {
+		// Skip if there are no nodes under this heading
 		if ( empty( $items ) ) {
 			continue;
 		}
 		$output .= '<h3>' . $heading . "</h3>\n";
 		$output .= "<ul>\n";
 		foreach ( $items as $item ) {
-			$output  .= '<li>' . trim( strip_tags( $item, '<code>' ) ) . "</li>\n";
+			$output .= '<li>' . trim( strip_tags( $item, '<code>' ) ) . "</li>\n";
 		}
 		$output .= "</ul>\n";
 	}
@@ -431,7 +434,7 @@ function create_changelog_for_last_release() {
 		exit( 0 );
 	}
 
-	$release  = $releases[0];
+	$release = $releases[0];
 
 	if ( ! isset( $release['body'] ) ) {
 		echo "No body found for the latest release.\n";

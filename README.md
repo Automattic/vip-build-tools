@@ -20,15 +20,15 @@ Extracts changelog information from the last closed Pull Request description and
 
 ### Options
 
-| Option              | Description                                                                                    | Required / Optional | Default Value               |
-|---------------------|:----------------------------------------------------------------------------------------------:|---------------------|----------------------------|
-| wp-endpoint         | The WordPress posts endpoint the changelog will be posted at.                                  | Required            |                             |
-| start-marker        | The text marker used to find the start of the changelog description inside the PR description. | Optional            | `<h2>Changelog Description` |
-| end-marker          | The text marker used to find the end of the changelog description inside the PR description.   | Optional            | `<h2>`                      |
-| wp-status           | The WordPress post status.                                                                     | Optional            | `draft`                     |
-| wp-tag-ids          | A comma separated list of WordPress tag ids to add to the post.                                | Optional            |                             |
-| link-to-pr          | Whether or not to include the link to the PR in the post.                                      | Optional            | `true`                      |
-| changelog-source    | Source to create the changelog for. Default is 'last-pr', other options are 'last-release'     | Optional            |                             |
+| Option              | Description                                                                                                  | Required / Optional | Default Value               |
+|---------------------|:------------------------------------------------------------------------------------------------------------:|---------------------|-----------------------------|
+| wp-endpoint         | The WordPress posts endpoint the changelog will be posted at.                                                | Required            |                             |
+| start-marker        | The text marker used to find the start of the changelog description inside the PR description.               | Optional            | `<h2>Changelog Description` |
+| end-marker          | The text marker used to find the end of the changelog description inside the PR description.                 | Optional            | `<h2>`                      |
+| wp-status           | The WordPress post status.                                                                                   | Optional            | `draft`                     |
+| wp-tag-ids          | A comma separated list of WordPress tag ids to add to the post.                                              | Optional            |                             |
+| link-to-pr          | Whether or not to include the link to the PR in the post.                                                    | Optional            | `true`                      |
+| changelog-source    | Source to create the changelog for. Use `last-release` to process release notes, otherwise processes last PR | Optional            |                             |
 
 ### Environment Variables
 
