@@ -60,6 +60,10 @@ function make_github_request_paginated( $url ) {
  * @return array The PR objects from PR IDs referenced in the commits
  */
 function get_referenced_prs( $pr ) {
+	if ( ! isset( $pr['_links']['commits']['href'] ) ) {
+		return array();
+	}
+
 	$commits = make_github_request_paginated( $pr['_links']['commits']['href'] );
 	$pr_ids  = array();
 
@@ -67,14 +71,13 @@ function get_referenced_prs( $pr ) {
 		$msg = $commit['commit']['message'];
 
 		echo "Checking commit: {$commit['sha']}\n";
-		if ( 1 === preg_match( '/\(\#[0-9]+\)/', $msg, $matches ) || 1 === preg_match( '/^Merge pull request #[0-9]+/', $msg, $matches ) ) {
-			$id = preg_replace( '/[^0-9]/', '', $matches[0] );
-			echo "Found PR ID: $id\n";
-			$pr_ids[] = $id;
+		$pr_ids_from_commit = get_pr_ids_from_message( $msg );
+		if ( ! empty( $pr_ids_from_commit ) ) {
+			$pr_ids = array_merge( $pr_ids, $pr_ids_from_commit );
 		}
 	}
 
-	$prs = fetch_prs_by_ids( $pr_ids );
+	$prs = fetch_prs_by_ids( array_unique( $pr_ids ) );
 
 	return $prs;
 }
