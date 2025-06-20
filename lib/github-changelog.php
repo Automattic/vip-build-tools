@@ -8,6 +8,13 @@ function debug( $arg ) {
 	echo 'DEBUG: ' . print_r( $arg, true );
 }
 
+/**
+ * Make a GitHub request.
+ *
+ * @param string $url The URL to make the request to
+ * @param array $headers The headers to send with the request
+ * @return array The response from the GitHub API
+ */
 function make_github_request( $url, $headers = array() ) {
 	$ch      = curl_init( $url );
 	$headers = array_merge( $headers, array( 'User-Agent: script' ) );
@@ -24,8 +31,68 @@ function make_github_request( $url, $headers = array() ) {
 	return json_decode( $data, true );
 }
 
+/**
+ * Wrapper which paginates the GitHub request to fetch everything. Useful when
+ * the endpoint doesn't include pagination information.
+ *
+ * @param string $url URL to get
+ * @return array $data The array with all the data
+ */
+function make_github_request_paginated( $url ) {
+	$all_data       = array();
+	$pagination_url = $url . '?per_page=50&page=';
+
+	for ( $page = 1; ; $page++ ) {
+		$data = make_github_request( $pagination_url . $page );
+		if ( empty( $data ) ) {
+			break;
+		}
+		$all_data = array_merge( $all_data, $data );
+	}
+
+	return $all_data;
+}
+
+/**
+ * Get the PRs referenced in the commits of a PR.
+ *
+ * @param array $pr The PR object from GitHub API
+ * @return array The PR objects from PR IDs referenced in the commits
+ */
+function get_referenced_prs( $pr ) {
+	if ( ! isset( $pr['_links']['commits']['href'] ) ) {
+		return array();
+	}
+
+	$commits = make_github_request_paginated( $pr['_links']['commits']['href'] );
+	$pr_ids  = array();
+
+	foreach ( $commits as $commit ) {
+		$msg = $commit['commit']['message'];
+
+		echo "Checking commit: {$commit['sha']}\n";
+		$pr_ids_from_commit = get_pr_ids_from_message( $msg );
+		if ( ! empty( $pr_ids_from_commit ) ) {
+			$pr_ids = array_merge( $pr_ids, $pr_ids_from_commit );
+		}
+	}
+
+	$prs = fetch_prs_by_ids( array_unique( $pr_ids ) );
+
+	return $prs;
+}
+
+/**
+ * Fetch the last closed PR.
+ *
+ * @return array The last closed PR
+ */
 function fetch_last_pr() {
 	$url = GITHUB_PR_ENDPOINT . '?per_page=10&sort=updated&direction=desc&state=closed';
+
+	if ( '' !== GITHUB_BASE_BRANCH ) {
+		$url .= '&base=' . GITHUB_BASE_BRANCH;
+	}
 
 	$last_prs = make_github_request( $url );
 
@@ -45,6 +112,12 @@ function fetch_last_pr() {
 	return $merged_prs_array[0];
 }
 
+/**
+ * Fetch a PR by its ID.
+ *
+ * @param int $pr_id The ID of the PR to fetch
+ * @return array The PR object from GitHub API
+ */
 function fetch_pr( $pr_id ) {
 	$url = GITHUB_PR_ENDPOINT . '/' . $pr_id;
 
@@ -109,10 +182,6 @@ function get_changelog_html( $pr, $link_to_pr = LINK_TO_PR ) {
  * @return array The title and content for the changelog post
  */
 function parse_changelog_html( $changelog_html ) {
-	preg_match( '/<h3>(.*)<\/h3>/', $changelog_html, $matches );
-
-	$title = $matches[1] ?? null;
-
 	$known_sections = array(
 		'Fixed',
 		'Added',
@@ -120,19 +189,26 @@ function parse_changelog_html( $changelog_html ) {
 		'Removed',
 	);
 
-	$content_changelog_html = $changelog_html;
-
-	// If no title was found, or if the found "title" is one of our known section headers, then generate one using the current time
-	if ( ! $title || in_array( $title, $known_sections ) ) {
-		$title = gmdate( 'o-m-d H:i' );
-	} else {
-		// Remove the header from html. WP will add the title there.
-		$content_changelog_html = str_replace( $matches[0], '', $changelog_html );
+	// Check if we have multiple instances of known sections
+	$has_duplicate_sections = false;
+	foreach ( $known_sections as $section ) {
+		$count = substr_count( $changelog_html, '<h3>' . $section . '</h3>' );
+		if ( $count > 1 ) {
+			$has_duplicate_sections = true;
+			break;
+		}
 	}
+
+	// Aggregate sections if we have duplicates
+	if ( $has_duplicate_sections ) {
+		$changelog_html = aggregate_changelog_headings( $changelog_html );
+	}
+
+	$title = PROJECT_REPONAME . ' ' . gmdate( 'o-m-d H:i' );
 
 	return array(
 		'title'   => $title,
-		'content' => $content_changelog_html,
+		'content' => $changelog_html,
 	);
 }
 
@@ -175,8 +251,6 @@ function build_changelog_request_body( $title, $content, $tags, $channels, $cate
  */
 function create_changelog_post( $title, $content, $tags, $channels, $categories ) {
 	$fields = build_changelog_request_body( $title, $content, $tags, $channels, $categories );
-
-	debug( $fields );
 
 	$ch = curl_init( WP_CHANGELOG_ENDPOINT );
 	curl_setopt( $ch, CURLOPT_RETURNTRANSFER, true );
@@ -252,6 +326,29 @@ function get_changelog_channels() {
 }
 
 /**
+ * Generates the changelog HTML from a list of PRs.
+ *
+ * @param array $prs The PRs to generate the changelog from
+ * @return array The changelog HTML and tags
+ */
+function generate_changelog_from_prs( $prs ) {
+	$all_changelog_html = '';
+	$all_tags           = array();
+
+	foreach ( $prs as $pr ) {
+		$changelog_html = get_changelog_html( $pr, false );
+
+		if ( ! empty( $changelog_html ) ) {
+			$all_changelog_html .= "\n\n" . $changelog_html;
+			$pr_tags             = get_changelog_tags( $pr['labels'] );
+			$all_tags            = array_merge( $all_tags, $pr_tags );
+		}
+	}
+
+	return array( $all_changelog_html, $all_tags );
+}
+
+/**
  * Creates a changelog post from the latest PR.
  *
  * @return void
@@ -269,10 +366,20 @@ function create_changelog_for_last_pr() {
 		exit( 0 );
 	}
 
-	$changelog_tags       = get_changelog_tags( $pr['labels'] );
+	// The last merged PR and any PRs found in its commits.
+	$prs = array_merge( array( $pr ), get_referenced_prs( $pr ) );
+
+	if ( ! empty( $prs ) ) {
+		list( $changelog_html, $changelog_tags ) = generate_changelog_from_prs( $prs );
+	}
+
 	$changelog_categories = get_changelog_categories();
 	$changelog_channels   = get_changelog_channels();
-	$changelog_html       = get_changelog_html( $pr );
+
+	// Add a link to the PR if requested.
+	if ( LINK_TO_PR ) {
+		$changelog_html = $changelog_html . "\n\n" . $pr['html_url'];
+	}
 
 	if ( empty( $changelog_html ) ) {
 		echo "Skipping post. No changelog text found.\n";
@@ -280,6 +387,8 @@ function create_changelog_for_last_pr() {
 	}
 
 	$changelog_record = parse_changelog_html( $changelog_html );
+
+	debug( $changelog_record );
 
 	create_changelog_post( $changelog_record['title'], $changelog_record['content'], $changelog_tags, $changelog_channels, $changelog_categories );
 	echo "\n\nAll done!";
@@ -377,7 +486,7 @@ function aggregate_changelog_headings( string $html ): string {
 		return $html;
 	}
 
-	$aggregated     = array();
+	$aggregated      = array();
 	$current_heading = null;
 
 	foreach ( $root->childNodes as $node ) {
@@ -452,48 +561,33 @@ function create_changelog_for_last_release() {
 
 	$prs = fetch_prs_by_ids( $pr_ids );
 
-	$all_changelog_html = '';
-	$all_tags           = array();
-
-	foreach ( $prs as $pr ) {
-		$changelog_html = get_changelog_html( $pr, false );
-
-		if ( ! empty( $changelog_html ) ) {
-			$all_changelog_html .= "\n\n" . $changelog_html;
-			$pr_tags             = get_changelog_tags( $pr['labels'] );
-			$all_tags            = array_merge( $all_tags, $pr_tags );
-		}
+	if ( empty( $prs ) ) {
+		echo "No PRs found for the latest release.\n";
+		exit( 0 );
 	}
 
-	if ( empty( $all_changelog_html ) ) {
+	list( $changelog_html, $changelog_tags ) = generate_changelog_from_prs( $prs );
+
+	if ( empty( $changelog_html ) ) {
 		echo "No changelog entries found in any PRs for this release.\n";
 		exit( 0 );
 	}
 
-	if ( count( $prs ) > 1 ) {
-		$all_changelog_html = aggregate_changelog_headings( $all_changelog_html );
-	}
-
 	if ( LINK_TO_PR ) {
-		$all_changelog_html = $all_changelog_html . "\n\n" . $release['html_url'];
-	}
-
-	// Use release name and date as title
-	$title = $release['name'];
-
-	if ( ! $title ) {
-		$title = gmdate( 'o-m-d H:i', strtotime( $release['created_at'] ) );
+		$changelog_html = $changelog_html . "\n\n" . $release['html_url'];
 	}
 
 	// Remove duplicate tags
-	$all_tags = array_unique( $all_tags );
+	$changelog_tags = array_unique( $changelog_tags );
 
 	$changelog_categories = get_changelog_categories();
 	$changelog_channels   = get_changelog_channels();
 
-	debug( $all_changelog_html );
+	$changelog_record = parse_changelog_html( $changelog_html );
 
-	create_changelog_post( $title, $all_changelog_html, $all_tags, $changelog_channels, $changelog_categories );
+	debug( $changelog_record );
+
+	create_changelog_post( $changelog_record['title'], $changelog_record['content'], $changelog_tags, $changelog_channels, $changelog_categories );
 
 	echo "\n\nAll done!";
 }
