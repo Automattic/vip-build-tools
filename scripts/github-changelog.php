@@ -45,7 +45,7 @@ if ( ! isset( $options['wp-endpoint'] ) ) {
 define( 'SHA1', $_SERVER['CIRCLE_SHA1'] ?? '' );
 define( 'PROJECT_USERNAME', $_SERVER['CIRCLE_PROJECT_USERNAME'] ?? '' );
 define( 'PROJECT_REPONAME', $_SERVER['CIRCLE_PROJECT_REPONAME'] ?? '' );
-define( 'BRANCH', $_SERVER['GITHUB_BRANCH'] ?? '' );
+define( 'GITHUB_BASE_BRANCH', $_SERVER['GITHUB_BASE_BRANCH'] ?? '' );
 define( 'CHANGELOG_POST_TOKEN', $_SERVER['CHANGELOG_POST_TOKEN'] ?? '' );
 define( 'GITHUB_TOKEN', $_SERVER['GITHUB_TOKEN'] ?? '' );
 define( 'GITHUB_PR_ENDPOINT', 'https://api.github.com/repos/' . PROJECT_USERNAME . '/' . PROJECT_REPONAME . '/pulls' );

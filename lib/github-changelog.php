@@ -87,8 +87,8 @@ function get_referenced_prs( $pr ) {
 function fetch_last_pr() {
 	$url = GITHUB_PR_ENDPOINT . '?per_page=10&sort=updated&direction=desc&state=closed';
 
-	if ( '' !== BRANCH ) {
-		$url .= '&base=' . BRANCH;
+	if ( '' !== GITHUB_BASE_BRANCH ) {
+		$url .= '&base=' . GITHUB_BASE_BRANCH;
 	}
 
 	$last_prs = make_github_request( $url );
@@ -364,7 +364,7 @@ function create_changelog_for_last_pr() {
 	}
 
 	// The last merged PR and any PRs found in its commits.
-	$prs = array_merge( $pr, get_referenced_prs( $pr ) );
+	$prs = array_merge( array( $pr ), get_referenced_prs( $pr ) );
 
 	if ( ! empty( $prs ) ) {
 		list( $changelog_html, $changelog_tags ) = generate_changelog_from_prs( $prs );
