@@ -46,8 +46,12 @@ Most of these variables are already [built-in](https://circleci.com/docs/2.0/env
 
 ### Usage Example
 
-An example [CircleCI Workflow](https://circleci.com/docs/2.0/workflows/) is available [here](/examples/changelog-circleci-config.yml).
-
-The example does NOT have a valid WP TOKEN so no entry will be published.
-
-To run the example you can use circleci-cli: `circleci local execute --job create-changelog-draft --config examples/changelog-circleci-config.yml`
+```
+GITHUB_TOKEN="" CHANGELOG_POST_TOKEN="" CIRCLE_PROJECT_USERNAME="" CIRCLE_PROJECT_REPONAME="" php scripts/github-changelog.php \
+    --wp-endpoint=https://example.com/wp-json/wp/v2/posts \
+    --wp-status=draft \
+    --wp-tag-ids=1 \
+    --wp-categories=3 \
+    --link-to-pr=true \
+    --changelog-source=last-release
+```
