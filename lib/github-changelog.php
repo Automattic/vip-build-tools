@@ -1,9 +1,9 @@
 <?php
 
 function debug( $arg ) {
-	// if ( ! DEBUG ) {
-	// 	return;
-	// }
+	if ( ! DEBUG ) {
+		return;
+	}
 
 	echo 'DEBUG: ' . print_r( $arg, true );
 }
@@ -173,10 +173,6 @@ function get_changelog_html( $pr, $link_to_pr = LINK_TO_PR ) {
  * @return array The title and content for the changelog post
  */
 function parse_changelog_html( $changelog_html ) {
-	preg_match( '/<h3>(.*)<\/h3>/', $changelog_html, $matches );
-
-	$title = $matches[1] ?? null;
-
 	$known_sections = array(
 		'Fixed',
 		'Added',
@@ -184,19 +180,26 @@ function parse_changelog_html( $changelog_html ) {
 		'Removed',
 	);
 
-	$content_changelog_html = $changelog_html;
-
-	// If no title was found, or if the found "title" is one of our known section headers, then generate one using the current time
-	if ( ! $title || in_array( $title, $known_sections ) ) {
-		$title = PROJECT_REPONAME . ' ' . gmdate( 'o-m-d H:i' );
-	} else {
-		// Remove the header from html. WP will add the title there.
-		$content_changelog_html = str_replace( $matches[0], '', $changelog_html );
+	// Check if we have multiple instances of known sections
+	$has_duplicate_sections = false;
+	foreach ( $known_sections as $section ) {
+		$count = substr_count( $changelog_html, '<h3>' . $section . '</h3>' );
+		if ( $count > 1 ) {
+			$has_duplicate_sections = true;
+			break;
+		}
 	}
+
+	// Aggregate sections if we have duplicates
+	if ( $has_duplicate_sections ) {
+		$changelog_html = aggregate_changelog_headings( $changelog_html );
+	}
+
+	$title = PROJECT_REPONAME . ' ' . gmdate( 'o-m-d H:i' );
 
 	return array(
 		'title'   => $title,
-		'content' => $content_changelog_html,
+		'content' => $changelog_html,
 	);
 }
 
@@ -364,6 +367,7 @@ function create_changelog_for_last_pr() {
 	$changelog_categories = get_changelog_categories();
 	$changelog_channels   = get_changelog_channels();
 
+	// Add a link to the PR if requested.
 	if ( LINK_TO_PR ) {
 		$changelog_html = $changelog_html . "\n\n" . $pr['html_url'];
 	}
@@ -558,10 +562,6 @@ function create_changelog_for_last_release() {
 	if ( empty( $changelog_html ) ) {
 		echo "No changelog entries found in any PRs for this release.\n";
 		exit( 0 );
-	}
-
-	if ( count( $prs ) > 1 ) {
-		$changelog_html = aggregate_changelog_headings( $changelog_html );
 	}
 
 	if ( LINK_TO_PR ) {
