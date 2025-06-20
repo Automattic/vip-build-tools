@@ -39,11 +39,17 @@ function make_github_request( $url, $headers = array() ) {
  * @return array $data The array with all the data
  */
 function make_github_request_paginated( $url ) {
-	$all_data = [];
-    $pagination_url = $url . '?per_page=50&page=';
-	for ( $page = 1; ! empty( $data = make_github_request( $pagination_url . $page ) ); $page++ ) {
+	$all_data       = array();
+	$pagination_url = $url . '?per_page=50&page=';
+
+	for ( $page = 1; ; $page++ ) {
+		$data = make_github_request( $pagination_url . $page );
+		if ( empty( $data ) ) {
+			break;
+		}
 		$all_data = array_merge( $all_data, $data );
 	}
+
 	return $all_data;
 }
 
@@ -54,19 +60,19 @@ function make_github_request_paginated( $url ) {
  * @return array The PR objects from PR IDs referenced in the commits
  */
 function get_referenced_prs( $pr ) {
-	$commits = make_github_request_paginated( $pr['_links']['commits']['href']);
-    $pr_ids = [];
+	$commits = make_github_request_paginated( $pr['_links']['commits']['href'] );
+	$pr_ids  = array();
 
-    foreach( $commits as $commit ) {
-        $msg = $commit['commit']['message'];
+	foreach ( $commits as $commit ) {
+		$msg = $commit['commit']['message'];
 
-        echo "Checking commit: {$commit['sha']}\n";
-        if ( 1 === preg_match( '/\(\#[0-9]+\)/', $msg, $matches ) || 1 === preg_match( '/^Merge pull request #[0-9]+/', $msg, $matches ) ) {
-            $id = preg_replace('/[^0-9]/', '', $matches[0] );
-            echo "Found PR ID: $id\n";
-            $pr_ids[] = $id;
-        }
-    }
+		echo "Checking commit: {$commit['sha']}\n";
+		if ( 1 === preg_match( '/\(\#[0-9]+\)/', $msg, $matches ) || 1 === preg_match( '/^Merge pull request #[0-9]+/', $msg, $matches ) ) {
+			$id = preg_replace( '/[^0-9]/', '', $matches[0] );
+			echo "Found PR ID: $id\n";
+			$pr_ids[] = $id;
+		}
+	}
 
 	$prs = fetch_prs_by_ids( $pr_ids );
 
@@ -477,7 +483,7 @@ function aggregate_changelog_headings( string $html ): string {
 		return $html;
 	}
 
-	$aggregated     = array();
+	$aggregated      = array();
 	$current_heading = null;
 
 	foreach ( $root->childNodes as $node ) {
