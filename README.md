@@ -20,14 +20,15 @@ Extracts changelog information from the last closed Pull Request description and
 
 ### Options
 
-| Option       | Description                                                                                    | Required / Optional | Default Value               |
-| -------------|:----------------------------------------------------------------------------------------------:|---------------------| --------------------------- |
-| wp-endpoint  | The WordPress posts endpoint the changelog will be posted at.                                  | Required            |                             |
-| start-marker | The text marker used to find the start of the changelog description inside the PR description. | Optional            | `<h2>Changelog Description` |
-| end-marker   | The text marker used to find the end of the changelog description inside the PR description.   | Optional            | `<h2>`                      |
-| wp-status    | The WordPress post status.                                                                     | Optional            | `draft`                     |
-| wp-tag-ids   | A comma separated list of WordPress tag ids to add to the post.                                | Optional            |                             |
-| link-to-pr   | Wether or not to include the link to the PR in the post.                                       | Optional            | `true`                      |
+| Option              | Description                                                                                                  | Required / Optional | Default Value               |
+|---------------------|:------------------------------------------------------------------------------------------------------------:|---------------------|-----------------------------|
+| wp-endpoint         | The WordPress posts endpoint the changelog will be posted at.                                                | Required            |                             |
+| start-marker        | The text marker used to find the start of the changelog description inside the PR description.               | Optional            | `<h2>Changelog Description` |
+| end-marker          | The text marker used to find the end of the changelog description inside the PR description.                 | Optional            | `<h2>`                      |
+| wp-status           | The WordPress post status.                                                                                   | Optional            | `draft`                     |
+| wp-tag-ids          | A comma separated list of WordPress tag ids to add to the post.                                              | Optional            |                             |
+| link-to-pr          | Whether or not to include the link to the PR in the post.                                                    | Optional            | `true`                      |
+| changelog-source    | Source to create the changelog for. Use `last-release` to process release notes, otherwise processes last PR | Optional            |                             |
 
 ### Environment Variables
 
@@ -40,12 +41,17 @@ Most of these variables are already [built-in](https://circleci.com/docs/2.0/env
 | CHANGELOG_POST_TOKEN    | WordPress.com auth token required to post to the endpoint.           | Required            |
 | GITHUB_TOKEN            | The GitHub personal acess token needed to read private repositories. | Optional            |
 
+
 - `CHANGELOG_POST_TOKEN` can be generated using a helper app like https://github.com/Automattic/node-wpcom-oauth ([example instructions](https://wp.me/p6jPRI-4xy#comment-26288))
 
 ### Usage Example
 
-An example [CircleCI Workflow](https://circleci.com/docs/2.0/workflows/) is available [here](/examples/changelog-circleci-config.yml).
-
-The example does NOT have a valid WP TOKEN so no entry will be published.
-
-To run the example you can use circleci-cli: `circleci local execute --job create-changelog-draft --config examples/changelog-circleci-config.yml`
+```
+GITHUB_TOKEN="" CHANGELOG_POST_TOKEN="" CIRCLE_PROJECT_USERNAME="" CIRCLE_PROJECT_REPONAME="" php scripts/github-changelog.php \
+    --wp-endpoint=https://example.com/wp-json/wp/v2/posts \
+    --wp-status=draft \
+    --wp-tag-ids=1 \
+    --wp-categories=3 \
+    --link-to-pr=true \
+    --changelog-source=last-release
+```

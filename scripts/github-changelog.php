@@ -21,9 +21,9 @@ if ( ! is_env_set() ) {
 }
 
 $options = getopt(
-	null,
+	'',
 	array(
-		'link-to-pr', // Add link to the PR at the button of the changelog entry
+		'link-to-pr:', // Add link to the PR at the button of the changelog entry
 		'start-marker:', // Text bellow line matching this param will be considered changelog entry
 		'end-marker:', // Text untill this line will be considered changelog entry
 		'wp-endpoint:', // Endpoint to wordpress site to create posts for
@@ -33,7 +33,8 @@ $options = getopt(
 		'wp-channel-ids:', // Channel IDs to add to the changelog post
 		'verify-commit-hash', // Use --verify-commit-hash=false in order to skip hash validation. This is usefull when testing the integration
 		'debug', // Show debug information
-	) 
+		'changelog-source:', // Source to create the changelog for. Default is 'last-pr', other options are 'last-release'
+	)
 );
 
 if ( ! isset( $options['wp-endpoint'] ) ) {
@@ -46,17 +47,21 @@ define( 'PROJECT_USERNAME', $_SERVER['CIRCLE_PROJECT_USERNAME'] ?? '' );
 define( 'PROJECT_REPONAME', $_SERVER['CIRCLE_PROJECT_REPONAME'] ?? '' );
 define( 'CHANGELOG_POST_TOKEN', $_SERVER['CHANGELOG_POST_TOKEN'] ?? '' );
 define( 'GITHUB_TOKEN', $_SERVER['GITHUB_TOKEN'] ?? '' );
-
-define( 'GITHUB_ENDPOINT', 'https://api.github.com/repos/' . PROJECT_USERNAME . '/' . PROJECT_REPONAME . '/pulls?per_page=10&sort=updated&direction=desc&state=closed' );
+define( 'GITHUB_PR_ENDPOINT', 'https://api.github.com/repos/' . PROJECT_USERNAME . '/' . PROJECT_REPONAME . '/pulls' );
+define( 'GITHUB_RELEASE_ENDPOINT', 'https://api.github.com/repos/' . PROJECT_USERNAME . '/' . PROJECT_REPONAME . '/releases' );
 define( 'PR_CHANGELOG_START_MARKER', $options['start-marker'] ?? '<h2>Changelog Description' );
 define( 'PR_CHANGELOG_END_MARKER', $options['end-marker'] ?? '<h2>' );
 define( 'WP_CHANGELOG_ENDPOINT', $options['wp-endpoint'] );
 define( 'WP_CHANGELOG_STATUS', $options['wp-status'] ?? 'draft' );
-define( 'WP_CHANGELOG_TAG_IDS', $options['wp-tag-ids'] );
-define( 'WP_CHANGELOG_CATEGORIES', $options['wp-categories'] );
-define( 'WP_CHANGELOG_CHANNEL_IDS', $options['wp-channel-ids'] );
-define( 'LINK_TO_PR', $options['link-to-pr'] ?? true );
+define( 'WP_CHANGELOG_TAG_IDS', $options['wp-tag-ids'] ?? '' );
+define( 'WP_CHANGELOG_CATEGORIES', $options['wp-categories'] ?? '' );
+define( 'WP_CHANGELOG_CHANNEL_IDS', $options['wp-channel-ids'] ?? '' );
+define( 'LINK_TO_PR', ( $options['link-to-pr'] ?? 'true' ) !== 'false' );
 define( 'VERIFY_COMMIT_HASH', $options['verify-commit-hash'] ?? true );
 define( 'DEBUG', array_key_exists( 'debug', $options ) );
 
-create_changelog_for_last_pr();
+if ( isset( $options['changelog-source'] ) && 'last-release' === $options['changelog-source'] ) {
+	create_changelog_for_last_release();
+} else {
+	create_changelog_for_last_pr();
+}
