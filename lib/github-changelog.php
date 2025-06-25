@@ -26,8 +26,15 @@ function make_github_request( $url, $headers = array() ) {
 	curl_setopt( $ch, CURLOPT_HEADER, 0 );
 	curl_setopt( $ch, CURLOPT_RETURNTRANSFER, true );
 	curl_setopt( $ch, CURLOPT_HTTPHEADER, $headers );
-	$data = curl_exec( $ch );
+	$data      = curl_exec( $ch );
+	$http_code = curl_getinfo( $ch, CURLINFO_HTTP_CODE );
 	curl_close( $ch );
+
+	if ( false === $data || $http_code >= 400 ) {
+		echo "Failed to fetch data from GitHub API. HTTP code: $http_code\n";
+		exit( 1 );
+	}
+
 	return json_decode( $data, true );
 }
 
@@ -40,7 +47,7 @@ function make_github_request( $url, $headers = array() ) {
  */
 function make_github_request_paginated( $url ) {
 	$all_data       = array();
-	$pagination_url = $url . '?per_page=50&page=';
+	$pagination_url = $url . '?per_page=100&page=';
 
 	for ( $page = 1; ; $page++ ) {
 		$data = make_github_request( $pagination_url . $page );
@@ -70,7 +77,7 @@ function get_referenced_prs( $pr ) {
 	foreach ( $commits as $commit ) {
 		$msg = $commit['commit']['message'];
 
-		echo "Checking commit: {$commit['sha']}\n";
+		debug( "Checking commit: {$commit['sha']}" );
 		$pr_ids_from_commit = get_pr_ids_from_message( $msg );
 		if ( ! empty( $pr_ids_from_commit ) ) {
 			$pr_ids = array_merge( $pr_ids, $pr_ids_from_commit );
