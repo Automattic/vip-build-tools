@@ -352,7 +352,7 @@ function generate_changelog_from_prs( $prs ) {
 		}
 	}
 
-	return array( $all_changelog_html, $all_tags );
+	return array( $all_changelog_html, array_unique( $all_tags ) );
 }
 
 /**
@@ -376,10 +376,7 @@ function create_changelog_for_last_pr() {
 	// The last merged PR and any PRs found in its commits.
 	$prs = array_merge( array( $pr ), get_referenced_prs( $pr ) );
 
-	if ( ! empty( $prs ) ) {
-		list( $changelog_html, $changelog_tags ) = generate_changelog_from_prs( $prs );
-	}
-
+	list( $changelog_html, $changelog_tags ) = generate_changelog_from_prs( $prs );
 	$changelog_categories = get_changelog_categories();
 	$changelog_channels   = get_changelog_channels();
 
@@ -583,9 +580,6 @@ function create_changelog_for_last_release() {
 	if ( LINK_TO_PR ) {
 		$changelog_html = $changelog_html . "\n\n" . $release['html_url'];
 	}
-
-	// Remove duplicate tags
-	$changelog_tags = array_unique( $changelog_tags );
 
 	$changelog_categories = get_changelog_categories();
 	$changelog_channels   = get_changelog_channels();
