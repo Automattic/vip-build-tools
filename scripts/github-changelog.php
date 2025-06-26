@@ -47,6 +47,7 @@ define( 'PROJECT_USERNAME', $_SERVER['CIRCLE_PROJECT_USERNAME'] ?? '' );
 define( 'PROJECT_REPONAME', $_SERVER['CIRCLE_PROJECT_REPONAME'] ?? '' );
 define( 'GITHUB_BASE_BRANCH', $_SERVER['GITHUB_BASE_BRANCH'] ?? '' );
 define( 'CHANGELOG_POST_TOKEN', $_SERVER['CHANGELOG_POST_TOKEN'] ?? '' );
+define( 'CHANGELOG_POST_AUTH_TYPE', $_SERVER['CHANGELOG_POST_AUTH_TYPE'] ?? 'bearer' );
 define( 'GITHUB_TOKEN', $_SERVER['GITHUB_TOKEN'] ?? '' );
 define( 'GITHUB_PR_ENDPOINT', 'https://api.github.com/repos/' . PROJECT_USERNAME . '/' . PROJECT_REPONAME . '/pulls' );
 define( 'GITHUB_RELEASE_ENDPOINT', 'https://api.github.com/repos/' . PROJECT_USERNAME . '/' . PROJECT_REPONAME . '/releases' );

@@ -257,12 +257,16 @@ function build_changelog_request_body( $title, $content, $tags, $channels, $cate
  * @return void
  */
 function create_changelog_post( $title, $content, $tags, $channels, $categories ) {
-	$fields = build_changelog_request_body( $title, $content, $tags, $channels, $categories );
+	$fields      = build_changelog_request_body( $title, $content, $tags, $channels, $categories );
+	$auth_header = 'Authorization: Bearer ' . CHANGELOG_POST_TOKEN;
+	if ( 'basic' === strtolower( CHANGELOG_POST_AUTH_TYPE ) ) {
+		$auth_header = 'Authorization: Basic ' . base64_encode( CHANGELOG_POST_TOKEN );
+	}
 
 	$ch = curl_init( WP_CHANGELOG_ENDPOINT );
 	curl_setopt( $ch, CURLOPT_RETURNTRANSFER, true );
 	curl_setopt( $ch, CURLOPT_POST, true );
-	curl_setopt( $ch, CURLOPT_HTTPHEADER, array( 'Authorization:Bearer ' . CHANGELOG_POST_TOKEN ) );
+	curl_setopt( $ch, CURLOPT_HTTPHEADER, array( $auth_header ) );
 	curl_setopt( $ch, CURLOPT_POSTFIELDS, $fields );
 	$response  = curl_exec( $ch );
 	$http_code = curl_getinfo( $ch, CURLINFO_RESPONSE_CODE );
@@ -377,8 +381,8 @@ function create_changelog_for_last_pr() {
 	$prs = array_merge( array( $pr ), get_referenced_prs( $pr ) );
 
 	list( $changelog_html, $changelog_tags ) = generate_changelog_from_prs( $prs );
-	$changelog_categories = get_changelog_categories();
-	$changelog_channels   = get_changelog_channels();
+	$changelog_categories                    = get_changelog_categories();
+	$changelog_channels                      = get_changelog_channels();
 
 	// Add a link to the PR if requested.
 	if ( LINK_TO_PR ) {
