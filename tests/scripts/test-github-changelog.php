@@ -9,6 +9,7 @@ require_once __DIR__ . '/../../lib/github-changelog.php';
 define( 'PR_CHANGELOG_START_MARKER', '<h2>Changelog Description' );
 define( 'PR_CHANGELOG_END_MARKER', '<h2>' );
 define( 'LINK_TO_PR', false );
+define( 'PROJECT_REPONAME', 'test-project' );
 
 class GitHub_Changelog_Test extends TestCase {
 	public function test_get_changelog_html(): void {
@@ -99,7 +100,7 @@ Foo Bar!';
 
 		$parsed = parse_changelog_html( $html );
 
-		$this->assertEquals( gmdate( 'o-m-d H:i' ), $parsed['title'] );
+		$this->assertEquals( 'test-project ' . gmdate( 'o-m-d H:i' ), $parsed['title'] );
 		$this->assertEquals(
 			'<h3>Fixed</h3>
 <ul>
@@ -110,15 +111,27 @@ Foo Bar!';
 		);
 	}
 
-	public function test_parse_changelog_html_with_no_title_found(): void {
-		$pr = array();
-
-		$html = 'this is the html of my changelog, it does not contain a title so it needs to autogenerate';
+	public function test_parse_changelog_html_with_duplicate_sections() {
+		$html = '<h3>Fixed</h3>
+		<ul>
+		<li>Fixed a bug</li>
+		</ul>
+		<h3>Fixed</h3>
+		<ul>
+		<li>Fixed another bug</li>
+		</ul>';
 
 		$parsed = parse_changelog_html( $html );
 
-		$this->assertEquals( gmdate( 'o-m-d H:i' ), $parsed['title'] );
-		$this->assertEquals( $html, $parsed['content'] );
+		$this->assertEquals( 'test-project ' . gmdate( 'o-m-d H:i' ), $parsed['title'] );
+		$this->assertEquals(
+			'<h3>Fixed</h3>
+<ul>
+<li>Fixed a bug</li>
+<li>Fixed another bug</li>
+</ul>',
+			$parsed['content']
+		);
 	}
 
 	/**
