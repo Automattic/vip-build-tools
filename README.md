@@ -29,6 +29,7 @@ Extracts changelog information from the last closed Pull Request description and
 | wp-tag-ids          | A comma separated list of WordPress tag ids to add to the post.                                              | Optional            |                             |
 | link-to-pr          | Whether or not to include the link to the PR in the post.                                                    | Optional            | `true`                      |
 | changelog-source    | Source to create the changelog for. Use `last-release` to process release notes, otherwise processes last PR | Optional            |                             |
+| wp-terms    | Taxonomies and terms to add to the post. E.g. `changelog_categories:1,2`  | Optional            |                             |
 
 ### Environment Variables
 
@@ -50,8 +51,9 @@ Most of these variables are already [built-in](https://circleci.com/docs/2.0/env
 GITHUB_TOKEN="" CHANGELOG_POST_TOKEN="" CIRCLE_PROJECT_USERNAME="" CIRCLE_PROJECT_REPONAME="" php scripts/github-changelog.php \
     --wp-endpoint=https://example.com/wp-json/wp/v2/posts \
     --wp-status=draft \
-    --wp-tag-ids=1 \
     --wp-categories=3 \
     --link-to-pr=true \
     --changelog-source=last-release
+    --wp-terms=custom_categories:1
+    --wp-terms=tags:4
 ```

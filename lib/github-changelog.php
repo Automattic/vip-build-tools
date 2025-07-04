@@ -222,26 +222,38 @@ function parse_changelog_html( $changelog_html ) {
 /**
  * Builds the changelog request body.
  *
- * @param string $title The title of the changelog post
- * @param string $content The content of the changelog post
- * @param array $tags The tags of the changelog post
- * @param array $channels The channels of the changelog post
- * @param array $categories The categories of the changelog post
- * @return array The changelog request body
+ * @param string $title  The title of the changelog post.
+ * @param string $content  The content of the changelog post.
+ * @param array  $tags  The tags of the changelog post.
+ * @param array  $meta  The meta fields of the changelog post.
+ * @return array The changelog request body.
  */
-function build_changelog_request_body( $title, $content, $tags, $channels, $categories ) {
+function build_changelog_request_body( $title, $content, $tags, $meta = array() ) {
+	$categories = get_changelog_categories( WP_CHANGELOG_CATEGORIES );
+	$channels   = get_changelog_channels( WP_CHANGELOG_CHANNEL_IDS );
+	$terms      = get_changelog_terms( WP_CHANGELOG_TERMS );
+
 	$fields = array(
 		'title'      => $title,
 		'content'    => $content,
 		'excerpt'    => $title,
 		'status'     => WP_CHANGELOG_STATUS,
-		'tags'       => implode( ',', $tags ),
-		'categories' => implode( ',', $categories ),
+		'categories' => implode( ',', (array) $categories ),
+		'tags'       => implode( ',', (array) $tags ),
+		'meta'       => array_filter( $meta ),
 	);
 
-	if ( $channels ) {
-		$fields['release-channel'] = implode( ',', $channels );
+	if ( ! empty( $channels ) ) {
+		$fields['release-channel'] = implode( ',', (array) $channels );
 	}
+
+	if ( ! empty( $terms ) ) {
+		foreach ( $terms as $taxonomy => $taxonomy_terms ) {
+			$fields[ $taxonomy ] = implode( ',', (array) $taxonomy_terms );
+		}
+	}
+
+	debug( $fields );
 
 	return $fields;
 }
@@ -252,12 +264,11 @@ function build_changelog_request_body( $title, $content, $tags, $channels, $cate
  * @param string $title The title of the changelog post
  * @param string $content The content of the changelog post
  * @param array $tags The tags of the changelog post
- * @param array $channels The channels of the changelog post
- * @param array $categories The categories of the changelog post
+ * @param array $meta The meta fields of the changelog post
  * @return void
  */
-function create_changelog_post( $title, $content, $tags, $channels, $categories ) {
-	$fields      = build_changelog_request_body( $title, $content, $tags, $channels, $categories );
+function create_changelog_post( $title, $content, $tags, $meta = array() ) {
+	$fields      = build_changelog_request_body( $title, $content, $tags, $meta );
 	$auth_header = 'Authorization: Bearer ' . CHANGELOG_POST_TOKEN;
 	if ( 'basic' === strtolower( CHANGELOG_POST_AUTH_TYPE ) ) {
 		$auth_header = 'Authorization: Basic ' . base64_encode( CHANGELOG_POST_TOKEN );
@@ -266,8 +277,8 @@ function create_changelog_post( $title, $content, $tags, $channels, $categories 
 	$ch = curl_init( WP_CHANGELOG_ENDPOINT );
 	curl_setopt( $ch, CURLOPT_RETURNTRANSFER, true );
 	curl_setopt( $ch, CURLOPT_POST, true );
-	curl_setopt( $ch, CURLOPT_HTTPHEADER, array( $auth_header ) );
-	curl_setopt( $ch, CURLOPT_POSTFIELDS, $fields );
+	curl_setopt( $ch, CURLOPT_HTTPHEADER, array( $auth_header, 'Content-Type: application/json' ) );
+	curl_setopt( $ch, CURLOPT_POSTFIELDS, json_encode( $fields ) );
 	$response  = curl_exec( $ch );
 	$http_code = curl_getinfo( $ch, CURLINFO_RESPONSE_CODE );
 	curl_close( $ch );
@@ -306,10 +317,11 @@ function get_changelog_tags( $github_labels ) {
 /**
  * Gets the changelog categories.
  *
+ * @param string $categories_input The categories input string
  * @return array The changelog categories
  */
-function get_changelog_categories() {
-	$categories = explode( ',', WP_CHANGELOG_CATEGORIES );
+function get_changelog_categories( $categories_input ) {
+	$categories = explode( ',', $categories_input );
 
 	$filtered = array_filter(
 		$categories,
@@ -323,13 +335,54 @@ function get_changelog_categories() {
 }
 
 /**
+ * Gets the taxonomy terms.
+ *
+ * @param mixed $taxonomy_input The taxonomy input string or array
+ * @return array The taxonomy terms
+ */
+function get_changelog_terms( $taxonomy_input = null ) {
+	$terms = array();
+
+	// Handle both single string and array of strings
+	$taxonomy_args = is_array( $taxonomy_input ) ? $taxonomy_input : array( $taxonomy_input );
+
+	foreach ( $taxonomy_args as $taxonomy_arg ) {
+		if ( empty( $taxonomy_arg ) ) {
+			continue;
+		}
+
+		// Validate the input format: taxonomy_name:id1,id2,id3
+		if ( preg_match( '/^([a-zA-Z0-9_\\-]+):(.+)$/', $taxonomy_arg, $matches ) ) {
+			$taxonomy_name = $matches[1];
+			$ids_string    = $matches[2];
+
+			if ( ! in_array( $taxonomy_name, ALLOWED_TAXONOMIES, true ) ) {
+				echo "Invalid taxonomy name: {$taxonomy_name}\n";
+				continue;
+			}
+
+			$ids = array_map( 'trim', explode( ',', $ids_string ) );
+
+			if ( ! empty( $ids ) ) {
+				$terms[ $taxonomy_name ] = array_values( $ids );
+			}
+		} else {
+			debug( "Invalid taxonomy format, skipping: {$taxonomy_arg}" );
+		}
+	}
+
+	return $terms;
+}
+
+/**
  * Gets the changelog channels.
  *
+ * @param string $channels_input The channels input string
  * @return array The changelog channels
  */
-function get_changelog_channels() {
+function get_changelog_channels( $channels_input ) {
 	return array_filter(
-		explode( ',', WP_CHANGELOG_CHANNEL_IDS ),
+		explode( ',', $channels_input ),
 		function ( $channel ) {
 			return (bool) $channel;
 		}
@@ -381,8 +434,9 @@ function create_changelog_for_last_pr() {
 	$prs = array_merge( array( $pr ), get_referenced_prs( $pr ) );
 
 	list( $changelog_html, $changelog_tags ) = generate_changelog_from_prs( $prs );
-	$changelog_categories                    = get_changelog_categories();
-	$changelog_channels                      = get_changelog_channels();
+	$meta                                    = array(
+		'changelog_pr' => $pr['html_url'],
+	);
 
 	// Add a link to the PR if requested.
 	if ( LINK_TO_PR ) {
@@ -398,7 +452,7 @@ function create_changelog_for_last_pr() {
 
 	debug( $changelog_record );
 
-	create_changelog_post( $changelog_record['title'], $changelog_record['content'], $changelog_tags, $changelog_channels, $changelog_categories );
+	create_changelog_post( $changelog_record['title'], $changelog_record['content'], $changelog_tags, $meta );
 	echo "\n\nAll done!";
 }
 
@@ -585,14 +639,16 @@ function create_changelog_for_last_release() {
 		$changelog_html = $changelog_html . "\n\n" . $release['html_url'];
 	}
 
-	$changelog_categories = get_changelog_categories();
-	$changelog_channels   = get_changelog_channels();
+	$meta = array(
+		'changelog_pr'      => $release['html_url'],
+		'changelog_version' => $release['tag_name'],
+	);
 
 	$changelog_record = parse_changelog_html( $changelog_html );
 
 	debug( $changelog_record );
 
-	create_changelog_post( $changelog_record['title'], $changelog_record['content'], $changelog_tags, $changelog_channels, $changelog_categories );
+	create_changelog_post( $changelog_record['title'], $changelog_record['content'], $changelog_tags, $meta );
 
 	echo "\n\nAll done!";
 }
