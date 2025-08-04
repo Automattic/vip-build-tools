@@ -62,7 +62,7 @@ define( 'WP_CHANGELOG_CHANNEL_IDS', $options['wp-channel-ids'] ?? '' );
 define( 'WP_CHANGELOG_TERMS', $options['wp-terms'] ?? '' );
 define( 'LINK_TO_PR', ( $options['link-to-pr'] ?? 'true' ) !== 'false' );
 define( 'VERIFY_COMMIT_HASH', $options['verify-commit-hash'] ?? true );
-define( 'ALLOWED_TAXONOMIES', array( 'tags', 'categories', 'release-channel', 'changelog_categories' ) );
+define( 'ALLOWED_TAXONOMIES', array( 'tags', 'categories', 'release-channel', 'changelog_category' ) );
 define( 'DEBUG', array_key_exists( 'debug', $options ) );
 
 // Check for deprecated options and show warnings
