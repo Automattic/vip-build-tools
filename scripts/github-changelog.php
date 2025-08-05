@@ -30,7 +30,7 @@ $options = getopt(
 		'wp-status:', // Status to create changelog post with. Common scenarios are 'draft' or 'published'
 		'wp-tag-ids:', // Default tag IDs to add to the changelog post
 		'wp-categories:', // Default categories to add to the changelog post
-		'wp-terms:', // Taxonomy terms to add to the changelog post (can be used multiple times: --wp-terms=changelog_category:1,2 --wp-terms=tags:3,4)
+		'wp-terms:', // Taxonomy terms to add to the changelog post (can be used multiple times: --wp-terms=custom_taxonomy_slug:1,2 --wp-terms=tags:3,4)
 		'wp-channel-ids:', // Channel IDs to add to the changelog post
 		'verify-commit-hash', // Use --verify-commit-hash=false in order to skip hash validation. This is usefull when testing the integration
 		'debug', // Show debug information
