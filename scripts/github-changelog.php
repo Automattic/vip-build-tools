@@ -30,6 +30,7 @@ $options = getopt(
 		'wp-status:', // Status to create changelog post with. Common scenarios are 'draft' or 'published'
 		'wp-tag-ids:', // Default tag IDs to add to the changelog post
 		'wp-categories:', // Default categories to add to the changelog post
+		'wp-terms:', // Taxonomy terms to add to the changelog post (can be used multiple times: --wp-terms=custom_taxonomy_slug:1,2 --wp-terms=tags:3,4)
 		'wp-channel-ids:', // Channel IDs to add to the changelog post
 		'verify-commit-hash', // Use --verify-commit-hash=false in order to skip hash validation. This is usefull when testing the integration
 		'debug', // Show debug information
@@ -58,9 +59,22 @@ define( 'WP_CHANGELOG_STATUS', $options['wp-status'] ?? 'draft' );
 define( 'WP_CHANGELOG_TAG_IDS', $options['wp-tag-ids'] ?? '' );
 define( 'WP_CHANGELOG_CATEGORIES', $options['wp-categories'] ?? '' );
 define( 'WP_CHANGELOG_CHANNEL_IDS', $options['wp-channel-ids'] ?? '' );
+define( 'WP_CHANGELOG_TERMS', $options['wp-terms'] ?? '' );
 define( 'LINK_TO_PR', ( $options['link-to-pr'] ?? 'true' ) !== 'false' );
 define( 'VERIFY_COMMIT_HASH', $options['verify-commit-hash'] ?? true );
+define( 'ALLOWED_TAXONOMIES', array( 'tags', 'categories', 'release-channel', 'changelog_category' ) );
 define( 'DEBUG', array_key_exists( 'debug', $options ) );
+
+// Check for deprecated options and show warnings
+if ( isset( $options['wp-tag-ids'] ) ) {
+	echo "WARNING: --wp-tag-ids is deprecated. Use --wp-terms=tags:1,2,3 instead.\n";
+}
+if ( isset( $options['wp-categories'] ) ) {
+	echo "WARNING: --wp-categories is deprecated. Use --wp-terms=categories:1,2,3 instead.\n";
+}
+if ( isset( $options['wp-channel-ids'] ) ) {
+	echo "WARNING: --wp-channel-ids is deprecated. Use --wp-terms=release-channel:1,2,3 instead.\n";
+}
 
 if ( isset( $options['changelog-source'] ) && 'last-release' === $options['changelog-source'] ) {
 	create_changelog_for_last_release();

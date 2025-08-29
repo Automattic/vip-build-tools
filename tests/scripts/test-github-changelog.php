@@ -8,15 +8,20 @@ require_once __DIR__ . '/../../lib/github-changelog.php';
 
 define( 'PR_CHANGELOG_START_MARKER', '<h2>Changelog Description' );
 define( 'PR_CHANGELOG_END_MARKER', '<h2>' );
+define( 'WP_CHANGELOG_CATEGORIES', '1,2,3' );
+define( 'WP_CHANGELOG_CHANNEL_IDS', '1,2,3' );
+define( 'WP_CHANGELOG_TERMS', '1,2,3' );
 define( 'LINK_TO_PR', false );
 define( 'PROJECT_REPONAME', 'test-project' );
+define( 'DEBUG', false );
+define( 'ALLOWED_TAXONOMIES', array( 'tags', 'categories', 'release-channel', 'changelog_category' ) );
 
 class GitHub_Changelog_Test extends TestCase {
 	public function test_get_changelog_html(): void {
 		$pr = array();
 
 		$pr['body'] = '# Description
-		
+
 Changes were made
 
 ## A different section
@@ -52,9 +57,7 @@ Foo Bar!';
 	}
 
 	public function test_get_changelog_categories() {
-		define( 'WP_CHANGELOG_CATEGORIES', 'foo,bar,,baz' );
-
-		$categories = get_changelog_categories();
+		$categories = get_changelog_categories( 'foo,bar,,baz' );
 
 		$expected = array(
 			'foo',
@@ -71,10 +74,14 @@ Foo Bar!';
 		$title      = 'foo title';
 		$content    = 'foo content';
 		$tags       = array( 1, 2, 3 );
-		$channels   = array( 'foo channel 1' );
-		$categories = array( 'foo category', 'bar category' );
+		$channels   = array( 1, 2, 3 );
+		$categories = array( 1, 2, 3 );
+		$meta       = array(
+			'changelog_pr'      => 'https://github.com/test-project/test-project/pull/1',
+			'changelog_version' => '1.0.0',
+		);
 
-		$body = build_changelog_request_body( $title, $content, $tags, $channels, $categories );
+		$body = build_changelog_request_body( $title, $content, $tags, $meta );
 
 		$expected = array(
 			'title'           => $title,
@@ -84,6 +91,10 @@ Foo Bar!';
 			'tags'            => implode( ',', $tags ),
 			'categories'      => implode( ',', $categories ),
 			'release-channel' => implode( ',', $channels ),
+			'meta'            => array(
+				'changelog_pr'      => 'https://github.com/test-project/test-project/pull/1',
+				'changelog_version' => '1.0.0',
+			),
 		);
 
 		$this->assertEquals( $expected, $body );
@@ -203,5 +214,54 @@ Foo Bar!';
 </ul>',
 			),
 		);
+	}
+
+	public function test_get_changelog_terms_with_single_taxonomy() {
+		$terms = get_changelog_terms( 'changelog_category:1,2,3' );
+		$this->assertEquals( array( 'changelog_category' => array( 1, 2, 3 ) ), $terms );
+	}
+
+	public function test_get_changelog_terms_with_multiple_taxonomies() {
+
+		$terms = get_changelog_terms( array( 'categories:1,2,3', 'tags:4,5,6' ) );
+
+		$this->assertEquals(
+			array(
+				'categories' => array( 1, 2, 3 ),
+				'tags'       => array( 4, 5, 6 ),
+			),
+			$terms
+		);
+	}
+
+
+	public function test_get_changelog_terms_with_invalid_taxonomy() {
+		$this->expectOutputString( 'Invalid taxonomy name: invalid_taxonomy' . PHP_EOL );
+
+		$terms = get_changelog_terms( array( 'invalid_taxonomy:1,2,3', 'changelog_category:4,5,6' ) );
+
+		$this->assertEquals(
+			array(
+				'changelog_category' => array( 4, 5, 6 ),
+			),
+			$terms
+		);
+	}
+
+
+	public function test_get_pr_ids_from_message() {
+		$test_cases = array(
+			'Merge pull request (#1234) from test-project/test-branch' => array( '1234' ),
+			'* chore: Update dependency by @user in https://github.com/Automattic/vip-cli/pull/1234' => array( '1234' ),
+			'* chore: Update dependency by @user in https://github.com/Automattic/vip-cli/pull/1235' => array( '1235' ),
+			'Multiple PRs: (#456) and https://github.com/org/repo/pull/789' => array( '456', '789' ),
+			'Duplicate PRs: (#1234) and (#1234)' => array( '1234' ),
+			'* chore: Update dependency by @user in https://github.com/Automattic/vip-cli/pull/1235 * chore: Update dependency by @user in https://github.com/Automattic/vip-cli/pull/1236' => array( '1235', '1236' ),
+		);
+
+		foreach ( $test_cases as $message => $expected_pr_ids ) {
+			$pr_ids = get_pr_ids_from_message( $message );
+			$this->assertEquals( $expected_pr_ids, $pr_ids, "Failed for message: {$message}" );
+		}
 	}
 }
