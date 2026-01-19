@@ -29,7 +29,8 @@ Extracts changelog information from the last closed Pull Request description and
 | wp-tag-ids          | A comma separated list of WordPress tag ids to add to the post.                                              | Optional            |                             |
 | link-to-pr          | Whether or not to include the link to the PR in the post.                                                    | Optional            | `true`                      |
 | changelog-source    | Source to create the changelog for. Use `last-release` to process release notes, otherwise processes last PR | Optional            |                             |
-| wp-terms    | Taxonomies and terms to add to the post. E.g. `custom_taxonomy_slug:1,2`  | Optional            |                             |
+| wp-terms            | Taxonomies and terms to add to the post. E.g. `custom_taxonomy_slug:1,2`                                     | Optional            |                             |
+| changelog-title     | Custom title format. Supports placeholders: `{date}`, `{datetime}`, `{pr}`, `{version}`, `{repo}`           | Optional            | `{repo} {datetime}`         |
 
 ### Environment Variables
 
@@ -53,7 +54,33 @@ GITHUB_TOKEN="" CHANGELOG_POST_TOKEN="" CIRCLE_PROJECT_USERNAME="" CIRCLE_PROJEC
     --wp-status=draft \
     --wp-categories=3 \
     --link-to-pr=true \
-    --changelog-source=last-release
-    --wp-terms=custom_taxonomy_slug:1
-    --wp-terms=tags:4
+    --changelog-source=last-release \
+    --wp-terms=custom_taxonomy_slug:1 \
+    --wp-terms=tags:4 \
+    --changelog-title="VIP Dashboard {date}"
+```
+
+### Custom Title Examples
+
+The `--changelog-title` option supports the following placeholders:
+
+- `{date}` - Current date in YYYY-MM-DD format
+- `{datetime}` - Current date and time in YYYY-MM-DD HH:MM format
+- `{pr}` - Pull request number (when using default or last-pr source)
+- `{version}` - Release version tag (when using last-release source)
+- `{repo}` - Repository name
+
+**Examples:**
+```bash
+# For date-based titles
+--changelog-title="VIP Dashboard {date}"
+# Result: "VIP Dashboard 2025-01-19"
+
+# For PR-based titles
+--changelog-title="VIP MU plugins PR {pr}"
+# Result: "VIP MU plugins PR 1234"
+
+# For version-based titles (use with --changelog-source=last-release)
+--changelog-title="VIP-CLI v{version}"
+# Result: "VIP-CLI v2.3.0"
 ```
