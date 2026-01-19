@@ -183,12 +183,43 @@ function get_changelog_html( $pr, $link_to_pr = LINK_TO_PR ) {
 }
 
 /**
+ * Generates the changelog title using the configured format or default.
+ *
+ * @param array $context Context data for title generation (pr_number, version, etc.)
+ * @param string $format Optional title format (defaults to CHANGELOG_TITLE_FORMAT constant)
+ * @return string The generated title
+ */
+function generate_changelog_title( $context = array(), $format = null ) {
+	$title_format = $format ?? CHANGELOG_TITLE_FORMAT;
+	
+	// Use default format if no custom format is specified
+	if ( empty( $title_format ) ) {
+		return PROJECT_REPONAME . ' ' . gmdate( 'o-m-d H:i' );
+	}
+	
+	// Define available placeholders
+	$placeholders = array(
+		'{date}'     => gmdate( 'Y-m-d' ),
+		'{datetime}' => gmdate( 'Y-m-d H:i' ),
+		'{repo}'     => PROJECT_REPONAME,
+		'{pr}'       => $context['pr_number'] ?? '',
+		'{version}'  => $context['version'] ?? '',
+	);
+	
+	// Replace placeholders in the title format
+	$title = str_replace( array_keys( $placeholders ), array_values( $placeholders ), $title_format );
+	
+	return $title;
+}
+
+/**
  * Parses the changelog HTML to get the title and content for the changelog post.
  *
  * @param string $changelog_html The changelog HTML
+ * @param array $context Additional context for title generation (pr_number, version, etc.)
  * @return array The title and content for the changelog post
  */
-function parse_changelog_html( $changelog_html ) {
+function parse_changelog_html( $changelog_html, $context = array() ) {
 	$known_sections = array(
 		'Fixed',
 		'Added',
@@ -211,7 +242,7 @@ function parse_changelog_html( $changelog_html ) {
 		$changelog_html = aggregate_changelog_headings( $changelog_html );
 	}
 
-	$title = PROJECT_REPONAME . ' ' . gmdate( 'o-m-d H:i' );
+	$title = generate_changelog_title( $context );
 
 	return array(
 		'title'   => $title,
@@ -448,7 +479,11 @@ function create_changelog_for_last_pr() {
 		exit( 0 );
 	}
 
-	$changelog_record = parse_changelog_html( $changelog_html );
+	$context = array(
+		'pr_number' => $pr['number'] ?? '',
+	);
+
+	$changelog_record = parse_changelog_html( $changelog_html, $context );
 
 	debug( $changelog_record );
 
@@ -644,7 +679,11 @@ function create_changelog_for_last_release() {
 		'changelog_version' => $release['tag_name'],
 	);
 
-	$changelog_record = parse_changelog_html( $changelog_html );
+	$context = array(
+		'version' => $release['tag_name'] ?? '',
+	);
+
+	$changelog_record = parse_changelog_html( $changelog_html, $context );
 
 	debug( $changelog_record );
 
