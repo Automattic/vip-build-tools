@@ -192,11 +192,6 @@ function get_changelog_html( $pr, $link_to_pr = LINK_TO_PR ) {
 function generate_changelog_title( $context = array(), $format = null ) {
 	$title_format = $format ?? CHANGELOG_TITLE_FORMAT;
 	
-	// Use default format if no custom format is specified
-	if ( empty( $title_format ) ) {
-		return PROJECT_REPONAME . ' ' . gmdate( 'o-m-d H:i' );
-	}
-	
 	// Define available placeholders
 	$placeholders = array(
 		'{date}'     => gmdate( 'Y-m-d' ),

@@ -30,7 +30,7 @@ Extracts changelog information from the last closed Pull Request description and
 | link-to-pr          | Whether or not to include the link to the PR in the post.                                                    | Optional            | `true`                      |
 | changelog-source    | Source to create the changelog for. Use `last-release` to process release notes, otherwise processes last PR | Optional            |                             |
 | wp-terms            | Taxonomies and terms to add to the post. E.g. `custom_taxonomy_slug:1,2`                                     | Optional            |                             |
-| changelog-title     | Custom title format. Supports placeholders: `{date}`, `{datetime}`, `{pr}`, `{version}`, `{repo}`           | Optional            | `{repo} {datetime}`         |
+| changelog-title     | Custom title format. Supports placeholders: `{date}`, `{datetime}`, `{pr}`, `{version}`, `{repo}`            | Optional            | `{repo} {datetime}`         |
 
 ### Environment Variables
 

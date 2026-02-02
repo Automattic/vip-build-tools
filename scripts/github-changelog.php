@@ -65,7 +65,7 @@ define( 'LINK_TO_PR', ( $options['link-to-pr'] ?? 'true' ) !== 'false' );
 define( 'VERIFY_COMMIT_HASH', $options['verify-commit-hash'] ?? true );
 define( 'ALLOWED_TAXONOMIES', array( 'tags', 'categories', 'release-channel', 'changelog_category' ) );
 define( 'DEBUG', array_key_exists( 'debug', $options ) );
-define( 'CHANGELOG_TITLE_FORMAT', $options['changelog-title'] ?? '' );
+define( 'CHANGELOG_TITLE_FORMAT', $options['changelog-title'] ?? '{repo} {datetime}' );
 
 // Check for deprecated options and show warnings
 if ( isset( $options['wp-tag-ids'] ) ) {
