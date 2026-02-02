@@ -166,12 +166,17 @@ function clean_changelog_html( $html ) {
 	}
 
 	$dom = new DOMDocument();
-	libxml_use_internal_errors( true );
+	
+	$previous_use_internal_errors = libxml_use_internal_errors( true );
 
-	if ( ! $dom->loadHTML( '<?xml encoding="utf-8" ?>' . $html, LIBXML_HTML_NOIMPLIED | LIBXML_HTML_NODEFDTD ) ) {
-		return $html;
+	try {
+		if ( ! $dom->loadHTML( '<?xml encoding="utf-8" ?>' . $html, LIBXML_HTML_NOIMPLIED | LIBXML_HTML_NODEFDTD ) ) {
+			return $html;
+		}
+	} finally {
+		libxml_clear_errors();
+		libxml_use_internal_errors( $previous_use_internal_errors );
 	}
-	libxml_clear_errors();
 
 	// phpcs:disable WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase
 	$xpath = new DOMXPath( $dom );
@@ -229,7 +234,7 @@ function clean_changelog_html( $html ) {
 
 	// Normalize whitespace - remove blank lines between tags.
 	$output = preg_replace( '/>\s+</', ">\n<", $output );
-	
+
 	// Ensure consistent formatting with newlines after opening/closing tags.
 	$output = preg_replace( '/<\/h3>\s*</', "</h3>\n<", $output );
 	$output = preg_replace( '/<\/p>\s*</', "</p>\n<", $output );
@@ -628,12 +633,17 @@ function aggregate_changelog_headings( string $html ): string {
 	}
 
 	$dom = new DOMDocument();
-	libxml_use_internal_errors( true );
 
-	if ( ! $dom->loadHTML( '<?xml encoding="utf-8" ?>' . $html ) ) {
-		return $html;
+	$previous_use_internal_errors = libxml_use_internal_errors( true );
+
+	try {
+		if ( ! $dom->loadHTML( '<?xml encoding="utf-8" ?>' . $html ) ) {
+			return $html;
+		}
+	} finally {
+		libxml_clear_errors();
+		libxml_use_internal_errors( $previous_use_internal_errors );
 	}
-	libxml_clear_errors();
 
 	// phpcs:disable WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase
 	$root = $dom->getElementsByTagName( 'body' )->item( 0 ) ?? $dom->documentElement;
