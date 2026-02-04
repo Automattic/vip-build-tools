@@ -11,6 +11,7 @@ define( 'PR_CHANGELOG_END_MARKER', '<h2>' );
 define( 'WP_CHANGELOG_CATEGORIES', '1,2,3' );
 define( 'WP_CHANGELOG_CHANNEL_IDS', '1,2,3' );
 define( 'WP_CHANGELOG_TERMS', '1,2,3' );
+define( 'WP_CHANGELOG_TAG_IDS', '' );
 define( 'LINK_TO_PR', false );
 define( 'PROJECT_REPONAME', 'test-project' );
 define( 'DEBUG', false );
@@ -453,5 +454,112 @@ Foo Bar!';
 </ul>',
 			$changelog
 		);
+	}
+
+	public function test_generate_changelog_from_prs_with_single_empty_pr(): void {
+		$prs = array(
+			array(
+				'body'   => '## Changelog Description
+
+### Added
+
+-   <!-- e.g. "Added a new feature" -->
+
+### Fixed
+
+-   <!-- e.g. "Fixed a bug" -->',
+				'labels' => array(),
+			),
+		);
+
+		list( $changelog_html ) = generate_changelog_from_prs( $prs );
+
+		// Should return empty string when PR has no real changelog entries
+		$this->assertEmpty( $changelog_html );
+	}
+
+	public function test_generate_changelog_from_prs_with_multiple_empty_prs(): void {
+		$prs = array(
+			array(
+				'body'   => '## Changelog Description
+
+### Added
+
+-   <!-- e.g. "Added a new feature" -->
+
+### Fixed
+
+-   <!-- e.g. "Fixed a bug" -->',
+				'labels' => array(),
+			),
+			array(
+				'body'   => '## Changelog Description
+
+### Removed
+
+-   <!-- e.g. "Dropped support of Node.js 14" -->
+-
+
+### Changed
+
+-   <!-- e.g. "Changed something" -->',
+				'labels' => array(),
+			),
+			array(
+				'body'   => '## Changelog Description
+
+### Fixed
+
+-   
+-',
+				'labels' => array(),
+			),
+		);
+
+		list( $changelog_html ) = generate_changelog_from_prs( $prs );
+
+		// Should return empty string when all PRs have no real changelog entries
+		$this->assertEmpty( $changelog_html );
+	}
+
+	public function test_generate_changelog_from_prs_with_mixed_empty_and_valid(): void {
+		$prs = array(
+			array(
+				'body'   => '## Changelog Description
+
+### Added
+
+-   <!-- e.g. "Added a new feature" -->',
+				'labels' => array(),
+			),
+			array(
+				'body'   => '## Changelog Description
+
+### Fixed
+
+-   Fixed a real bug',
+				'labels' => array(
+					array(
+						'name'        => 'bugfix',
+						'description' => 'ChangelogTagID: 123',
+					),
+				),
+			),
+			array(
+				'body'   => '## Changelog Description
+
+### Added
+
+-   
+-',
+				'labels' => array(),
+			),
+		);
+
+		list( $changelog_html ) = generate_changelog_from_prs( $prs );
+
+		// Should only include the PR with real content
+		$this->assertStringContainsString( 'Fixed a real bug', $changelog_html );
+		$this->assertStringNotContainsString( '<!-- e.g.', $changelog_html );
 	}
 }
