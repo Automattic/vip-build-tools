@@ -155,6 +155,97 @@ function get_changelog_section_in_description_html( $description ) {
 }
 
 /**
+ * Cleans empty list items and sections from changelog HTML.
+ *
+ * @param string $html The changelog HTML to clean
+ * @return string The cleaned HTML
+ */
+function clean_changelog_html( $html ) {
+	if ( empty( trim( $html ) ) ) {
+		return '';
+	}
+
+	$dom = new DOMDocument();
+	
+	$previous_use_internal_errors = libxml_use_internal_errors( true );
+
+	try {
+		if ( ! $dom->loadHTML( '<?xml encoding="utf-8" ?>' . $html, LIBXML_HTML_NOIMPLIED | LIBXML_HTML_NODEFDTD ) ) {
+			return $html;
+		}
+	} finally {
+		libxml_clear_errors();
+		libxml_use_internal_errors( $previous_use_internal_errors );
+	}
+
+	// phpcs:disable WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase
+	$xpath = new DOMXPath( $dom );
+
+	// Remove empty list items (items with only whitespace or that are completely empty)
+	$empty_list_items = $xpath->query( '//li[not(normalize-space())]' );
+	foreach ( $empty_list_items as $item ) {
+		$item->parentNode->removeChild( $item );
+	}
+
+	// Remove empty ul elements.
+	$empty_lists = $xpath->query( '//ul[not(li)]' );
+	foreach ( $empty_lists as $list ) {
+		$list->parentNode->removeChild( $list );
+	}
+
+	// Find h3 elements followed by no meaningful content.
+	$headings = $xpath->query( '//h3' );
+	foreach ( $headings as $heading ) {
+		$has_content = false;
+		$next_node   = $heading->nextSibling;
+
+		while ( $next_node ) {
+			// Stop at the next heading.
+			if ( XML_ELEMENT_NODE === $next_node->nodeType && 'h3' === $next_node->nodeName ) {
+				break;
+			}
+
+			// Check if this node has meaningful content.
+			if ( XML_ELEMENT_NODE === $next_node->nodeType ) {
+				if ( 'ul' === $next_node->nodeName && $next_node->hasChildNodes() ) {
+					$has_content = true;
+					break;
+				} elseif ( 'p' === $next_node->nodeName && ! empty( trim( $next_node->textContent ) ) ) {
+					$has_content = true;
+					break;
+				}
+			}
+
+			$next_node = $next_node->nextSibling;
+		}
+
+		// Remove heading if it has no content.
+		if ( ! $has_content ) {
+			$heading->parentNode->removeChild( $heading );
+		}
+	}
+
+	$output = $dom->saveHTML();
+	// phpcs:enable WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase
+
+	// Remove XML declaration and doctype if present.
+	$output = preg_replace( '/^<\?xml[^>]*>\s*/', '', $output );
+	$output = preg_replace( '/^<!DOCTYPE[^>]*>\s*/', '', $output );
+
+	// Normalize whitespace - remove blank lines between tags.
+	$output = preg_replace( '/>\s+</', ">\n<", $output );
+
+	// Ensure consistent formatting with newlines after opening/closing tags.
+	$output = preg_replace( '/<\/h3>\s*</', "</h3>\n<", $output );
+	$output = preg_replace( '/<\/p>\s*</', "</p>\n<", $output );
+	$output = preg_replace( '/<ul>\s*<li>/', "<ul>\n<li>", $output );
+	$output = preg_replace( '/<\/li>\s*<li>/', "</li>\n<li>", $output );
+	$output = preg_replace( '/<\/li>\s*<\/ul>/', "</li>\n</ul>", $output );
+
+	return trim( $output );
+}
+
+/**
  * Finds the changelog section in the PR description and returns the HTML.
  *
  * @param array $pr The PR object from GitHub API
@@ -171,6 +262,13 @@ function get_changelog_html( $pr, $link_to_pr = LINK_TO_PR ) {
 	$description_html = $parsedown->text( $body );
 
 	$changelog_html = get_changelog_section_in_description_html( $description_html );
+
+	if ( empty( $changelog_html ) ) {
+		return null;
+	}
+
+	// Clean empty list items and sections.
+	$changelog_html = clean_changelog_html( $changelog_html );
 
 	if ( empty( $changelog_html ) ) {
 		return null;
@@ -565,12 +663,17 @@ function aggregate_changelog_headings( string $html ): string {
 	}
 
 	$dom = new DOMDocument();
-	libxml_use_internal_errors( true );
 
-	if ( ! $dom->loadHTML( '<?xml encoding="utf-8" ?>' . $html ) ) {
-		return $html;
+	$previous_use_internal_errors = libxml_use_internal_errors( true );
+
+	try {
+		if ( ! $dom->loadHTML( '<?xml encoding="utf-8" ?>' . $html ) ) {
+			return $html;
+		}
+	} finally {
+		libxml_clear_errors();
+		libxml_use_internal_errors( $previous_use_internal_errors );
 	}
-	libxml_clear_errors();
 
 	// phpcs:disable WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase
 	$root = $dom->getElementsByTagName( 'body' )->item( 0 ) ?? $dom->documentElement;
