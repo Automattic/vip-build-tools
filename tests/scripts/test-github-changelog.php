@@ -11,6 +11,7 @@ define( 'PR_CHANGELOG_END_MARKER', '<h2>' );
 define( 'WP_CHANGELOG_CATEGORIES', '1,2,3' );
 define( 'WP_CHANGELOG_CHANNEL_IDS', '1,2,3' );
 define( 'WP_CHANGELOG_TERMS', '1,2,3' );
+define( 'WP_CHANGELOG_TAG_IDS', '' );
 define( 'LINK_TO_PR', false );
 define( 'PROJECT_REPONAME', 'test-project' );
 define( 'DEBUG', false );
@@ -263,5 +264,302 @@ Foo Bar!';
 			$pr_ids = get_pr_ids_from_message( $message );
 			$this->assertEquals( $expected_pr_ids, $pr_ids, "Failed for message: {$message}" );
 		}
+	}
+
+	/**
+	 * @dataProvider clean_changelog_html_provider
+	 */
+	public function test_clean_changelog_html( string $input, string $expected ) {
+		$this->assertEquals(
+			$expected,
+			clean_changelog_html( $input )
+		);
+	}
+
+	public function clean_changelog_html_provider(): array {
+		return array(
+			'empty list items'                      => array(
+				'<h3>Added</h3>
+<ul>
+<li></li>
+<li>   </li>
+<li>Something real</li>
+</ul>',
+				'<h3>Added</h3>
+<ul>
+<li>Something real</li>
+</ul>',
+			),
+			'section with only empty list items'    => array(
+				'<h3>Added</h3>
+<ul>
+<li></li>
+<li>   </li>
+</ul>
+<h3>Fixed</h3>
+<ul>
+<li>Fixed a bug</li>
+</ul>',
+				'<h3>Fixed</h3>
+<ul>
+<li>Fixed a bug</li>
+</ul>',
+			),
+			'multiple empty sections'               => array(
+				'<h3>Added</h3>
+<ul>
+<li></li>
+</ul>
+<h3>Removed</h3>
+<ul>
+<li>   </li>
+</ul>
+<h3>Fixed</h3>
+<ul>
+<li>Fixed a bug</li>
+</ul>',
+				'<h3>Fixed</h3>
+<ul>
+<li>Fixed a bug</li>
+</ul>',
+			),
+			'section with no list at all'           => array(
+				'<h3>Added</h3>
+<h3>Fixed</h3>
+<ul>
+<li>Fixed a bug</li>
+</ul>',
+				'<h3>Fixed</h3>
+<ul>
+<li>Fixed a bug</li>
+</ul>',
+			),
+			'all sections empty'                    => array(
+				'<h3>Added</h3>
+<ul>
+<li></li>
+</ul>
+<h3>Fixed</h3>
+<ul>
+<li></li>
+</ul>',
+				'',
+			),
+			'empty string input'                    => array(
+				'',
+				'',
+			),
+			'whitespace only input'                 => array(
+				'   ',
+				'',
+			),
+			'mixed empty and whitespace list items' => array(
+				'<h3>Changed</h3>
+<ul>
+<li></li>
+<li>
+</li>
+<li>   </li>
+<li>Real change here</li>
+<li>
+	
+</li>
+</ul>',
+				'<h3>Changed</h3>
+<ul>
+<li>Real change here</li>
+</ul>',
+			),
+			'preserves code tags'                   => array(
+				'<h3>Fixed</h3>
+<ul>
+<li></li>
+<li>Fixed bug in <code>my_function()</code></li>
+</ul>',
+				'<h3>Fixed</h3>
+<ul>
+<li>Fixed bug in <code>my_function()</code></li>
+</ul>',
+			),
+		);
+	}
+
+	public function test_get_changelog_html_with_template_format(): void {
+		$pr = array(
+			'body' => '## Changelog Description
+
+<!-- Changelogs are published for our customers -->
+
+### Added
+
+-   <!-- e.g. "Added a new set of filters for MFA status" -->
+-   <!-- e.g. "Dev-env: Added PHP 8.3 image" -->
+
+### Removed
+
+-   <!-- e.g. "Dropped support of Node.js 14" -->
+-
+
+### Fixed
+
+-   <!-- e.g. "Fixed a bug causing blank lines" -->
+-
+
+### Changed
+
+-   <!-- e.g. "Increased priority of wp_mail_from filter" -->
+-   <!-- e.g. "HyperDB: Updated to latest version" -->',
+		);
+
+		$changelog = get_changelog_html( $pr );
+
+		// Should return null because all sections are empty after cleaning
+		$this->assertNull( $changelog );
+	}
+
+	public function test_get_changelog_html_with_partial_template_format(): void {
+		$pr = array(
+			'body' => '## Changelog Description
+
+<!-- Changelogs are published for our customers -->
+
+### Added
+
+-   Added a real feature here
+-   <!-- e.g. "Dev-env: Added PHP 8.3 image" -->
+
+### Removed
+
+-   <!-- e.g. "Dropped support of Node.js 14" -->
+-
+
+### Fixed
+
+-   <!-- e.g. "Fixed a bug causing blank lines" -->
+-
+
+### Changed
+
+-   <!-- e.g. "Increased priority of wp_mail_from filter" -->
+-   <!-- e.g. "HyperDB: Updated to latest version" -->',
+		);
+
+		$changelog = get_changelog_html( $pr );
+
+		// Should only contain the "Added" section with the real content
+		$this->assertEquals(
+			'<h3>Added</h3>
+<ul>
+<li>Added a real feature here</li>
+</ul>',
+			$changelog
+		);
+	}
+
+	public function test_generate_changelog_from_prs_with_single_empty_pr(): void {
+		$prs = array(
+			array(
+				'body'   => '## Changelog Description
+
+### Added
+
+-   <!-- e.g. "Added a new feature" -->
+
+### Fixed
+
+-   <!-- e.g. "Fixed a bug" -->',
+				'labels' => array(),
+			),
+		);
+
+		list( $changelog_html ) = generate_changelog_from_prs( $prs );
+
+		// Should return empty string when PR has no real changelog entries
+		$this->assertEmpty( $changelog_html );
+	}
+
+	public function test_generate_changelog_from_prs_with_multiple_empty_prs(): void {
+		$prs = array(
+			array(
+				'body'   => '## Changelog Description
+
+### Added
+
+-   <!-- e.g. "Added a new feature" -->
+
+### Fixed
+
+-   <!-- e.g. "Fixed a bug" -->',
+				'labels' => array(),
+			),
+			array(
+				'body'   => '## Changelog Description
+
+### Removed
+
+-   <!-- e.g. "Dropped support of Node.js 14" -->
+-
+
+### Changed
+
+-   <!-- e.g. "Changed something" -->',
+				'labels' => array(),
+			),
+			array(
+				'body'   => '## Changelog Description
+
+### Fixed
+
+-   
+-',
+				'labels' => array(),
+			),
+		);
+
+		list( $changelog_html ) = generate_changelog_from_prs( $prs );
+
+		// Should return empty string when all PRs have no real changelog entries
+		$this->assertEmpty( $changelog_html );
+	}
+
+	public function test_generate_changelog_from_prs_with_mixed_empty_and_valid(): void {
+		$prs = array(
+			array(
+				'body'   => '## Changelog Description
+
+### Added
+
+-   <!-- e.g. "Added a new feature" -->',
+				'labels' => array(),
+			),
+			array(
+				'body'   => '## Changelog Description
+
+### Fixed
+
+-   Fixed a real bug',
+				'labels' => array(
+					array(
+						'name'        => 'bugfix',
+						'description' => 'ChangelogTagID: 123',
+					),
+				),
+			),
+			array(
+				'body'   => '## Changelog Description
+
+### Added
+
+-   
+-',
+				'labels' => array(),
+			),
+		);
+
+		list( $changelog_html ) = generate_changelog_from_prs( $prs );
+
+		// Should only include the PR with real content
+		$this->assertStringContainsString( 'Fixed a real bug', $changelog_html );
+		$this->assertStringNotContainsString( '<!-- e.g.', $changelog_html );
 	}
 }
