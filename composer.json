@@ -9,5 +9,10 @@
         "dealerdirect/phpcodesniffer-composer-installer": "^0.7.0",
         "phpunit/phpunit": "^9",
         "automattic/vipwpcs": "3.0.0"
+    },
+    "config": {
+        "allow-plugins": {
+            "dealerdirect/phpcodesniffer-composer-installer": true
+        }
     }
 }
