@@ -58,6 +58,31 @@ Foo Bar!';
 		);
 	}
 
+	public function test_get_changelog_html_with_blank_lines_and_trailing_footer(): void {
+		$pr = array(
+			'body' => '## Changelog Description
+
+### Fixed
+
+
+- Fixed a bug
+- Fixed another bug
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)',
+		);
+
+		$changelog = get_changelog_html( $pr );
+
+		$this->assertEquals(
+			'<h3>Fixed</h3>
+<ul>
+<li>Fixed a bug</li>
+<li>Fixed another bug</li>
+</ul>',
+			$changelog
+		);
+	}
+
 	public function test_get_changelog_categories() {
 		$categories = get_changelog_categories( 'foo,bar,,baz' );
 
@@ -440,6 +465,50 @@ Foo Bar!';
 				'<h3>Fixed</h3>
 <ul>
 <li>Fixed bug in <code>my_function()</code></li>
+</ul>',
+			),
+			'drops content after the list items'    => array(
+				'<h3>Fixed</h3>
+<ul>
+<li>Fixed a bug</li>
+</ul>
+<p>🤖 Generated with <a href="https://claude.com/claude-code">Claude Code</a></p>',
+				'<h3>Fixed</h3>
+<ul>
+<li>Fixed a bug</li>
+</ul>',
+			),
+			'stops at the first non-list element'   => array(
+				'<h3>Added</h3>
+<ul>
+<li>Added a feature</li>
+</ul>
+<p>Some trailing note</p>
+<h3>Fixed</h3>
+<ul>
+<li>Fixed a bug</li>
+</ul>',
+				'<h3>Added</h3>
+<ul>
+<li>Added a feature</li>
+</ul>',
+			),
+			'keeps multiple sections'               => array(
+				'<h3>Added</h3>
+<ul>
+<li>Added a feature</li>
+</ul>
+<h3>Fixed</h3>
+<ul>
+<li>Fixed a bug</li>
+</ul>',
+				'<h3>Added</h3>
+<ul>
+<li>Added a feature</li>
+</ul>
+<h3>Fixed</h3>
+<ul>
+<li>Fixed a bug</li>
 </ul>',
 			),
 		);

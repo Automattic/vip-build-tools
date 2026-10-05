@@ -193,6 +193,26 @@ function clean_changelog_html( $html ) {
 		$list->parentNode->removeChild( $list );
 	}
 
+	// Once list items have started, only headings and lists belong to the changelog.
+	// Drop everything from the first other element onwards (e.g. trailing footers).
+	$first_list = $xpath->query( '//ul' )->item( 0 );
+	if ( $first_list ) {
+		$next_node = $first_list->nextSibling;
+		$bailed    = false;
+		while ( $next_node ) {
+			$current   = $next_node;
+			$next_node = $next_node->nextSibling;
+
+			if ( ! $bailed && XML_ELEMENT_NODE === $current->nodeType && ! in_array( $current->nodeName, array( 'h3', 'ul' ), true ) ) {
+				$bailed = true;
+			}
+
+			if ( $bailed ) {
+				$current->parentNode->removeChild( $current );
+			}
+		}
+	}
+
 	// Find h3 elements followed by no meaningful content.
 	$headings = $xpath->query( '//h3' );
 	foreach ( $headings as $heading ) {
@@ -241,6 +261,7 @@ function clean_changelog_html( $html ) {
 	$output = preg_replace( '/<ul>\s*<li>/', "<ul>\n<li>", $output );
 	$output = preg_replace( '/<\/li>\s*<li>/', "</li>\n<li>", $output );
 	$output = preg_replace( '/<\/li>\s*<\/ul>/', "</li>\n</ul>", $output );
+	$output = preg_replace( '/<\/ul>\s*</', "</ul>\n<", $output );
 
 	return trim( $output );
 }
