@@ -58,17 +58,77 @@ Foo Bar!';
 		);
 	}
 
-	public function test_get_changelog_html_with_blank_lines_and_trailing_footer(): void {
+	public function test_get_changelog_html_from_details_block(): void {
 		$pr = array(
-			'body' => '## Changelog Description
+			'body' => '## Description
+
+Changes were made
+
+<details open>
+<summary><h2>Changelog Description (Customer-facing)</h2></summary>
 
 ### Fixed
 
+- Fixed a bug with **bold** text
 
-- Fixed a bug
-- Fixed another bug
+</details>
 
-🤖 Generated with [Claude Code](https://claude.com/claude-code)',
+Footer that should not be published',
+		);
+
+		$changelog = get_changelog_html( $pr );
+
+		$this->assertEquals(
+			'<h3>Fixed</h3>
+<ul>
+<li>Fixed a bug with <strong>bold</strong> text</li>
+</ul>',
+			$changelog
+		);
+	}
+
+	public function test_get_changelog_html_from_details_block_with_free_form_content(): void {
+		$pr = array(
+			'body' => '<details>
+<summary>
+  <h2>Changelog Description</h2>
+</summary>
+
+### Changed
+
+Data Sync now explains what each option does.
+
+- Updated the option descriptions
+
+</details>',
+		);
+
+		$changelog = get_changelog_html( $pr );
+
+		$this->assertEquals(
+			'<h3>Changed</h3>
+<p>Data Sync now explains what each option does.</p>
+<ul>
+<li>Updated the option descriptions</li>
+</ul>',
+			$changelog
+		);
+	}
+
+	public function test_get_changelog_html_ignores_unrelated_details_block(): void {
+		$pr = array(
+			'body' => '<details>
+<summary>Screenshots</summary>
+
+- Not a changelog
+
+</details>
+
+## Changelog Description
+
+### Fixed
+
+- Fixed a bug',
 		);
 
 		$changelog = get_changelog_html( $pr );
@@ -77,9 +137,120 @@ Foo Bar!';
 			'<h3>Fixed</h3>
 <ul>
 <li>Fixed a bug</li>
-<li>Fixed another bug</li>
 </ul>',
 			$changelog
+		);
+	}
+
+	public function test_get_changelog_html_ignores_details_block_in_code(): void {
+		$pr = array(
+			'body' => '## Description
+
+Use the new format:
+
+```markdown
+<details open>
+<summary><h2>Changelog Description</h2></summary>
+
+- Example item
+
+</details>
+```
+
+Or inline: `<details><summary><h2>Changelog Description</h2></summary> x </details>`
+
+## Changelog Description
+
+### Added
+
+- Real item',
+		);
+
+		$this->assertEquals(
+			'<h3>Added</h3>
+<ul>
+<li>Real item</li>
+</ul>',
+			get_changelog_html( $pr )
+		);
+	}
+
+	public function test_get_changelog_html_falls_back_when_details_block_is_empty(): void {
+		$pr = array(
+			'body' => '<details open>
+<summary><h2>Changelog Description</h2></summary>
+
+### Fixed
+
+- <!-- e.g. "Fixed a bug" -->
+-
+
+</details>
+
+## Changelog Description
+
+### Added
+
+- Real item',
+		);
+
+		$this->assertEquals(
+			'<h3>Added</h3>
+<ul>
+<li>Real item</li>
+</ul>',
+			get_changelog_html( $pr )
+		);
+	}
+
+	public function test_get_changelog_html_keeps_nested_details_block(): void {
+		$pr = array(
+			'body' => '<details open>
+<summary><h2>Changelog Description</h2></summary>
+
+### Fixed
+
+- Item A
+
+<details><summary>Screenshot</summary>img</details>
+
+- Item B
+
+</details>
+
+Footer',
+		);
+
+		$changelog = get_changelog_html( $pr );
+
+		$this->assertStringContainsString( '<li>Item A</li>', $changelog );
+		$this->assertStringContainsString( '<li>Item B</li>', $changelog );
+		$this->assertStringNotContainsString( 'Footer', $changelog );
+	}
+
+	/**
+	 * @dataProvider details_summary_variants_provider
+	 */
+	public function test_get_changelog_html_details_summary_variants( string $body ): void {
+		$this->assertEquals(
+			'<h3>Fixed</h3>
+<ul>
+<li>Fixed a bug</li>
+</ul>',
+			get_changelog_html( array( 'body' => $body ) )
+		);
+	}
+
+	public function details_summary_variants_provider(): array {
+		$content = "\n\n### Fixed\n\n- Fixed a bug\n\n</details>\n\nFooter";
+
+		return array(
+			'summary with attributes'        => array( "<details open>\n<summary class=\"c\">\n<h2>Changelog Description</h2>\n</summary>" . $content ),
+			'uppercase heading with id'      => array( '<details><summary><H2 id="x">Changelog Description</H2></summary>' . $content ),
+			'markdown heading in summary'    => array( '<details><summary>## Changelog Description</summary>' . $content ),
+			'plain text summary'             => array( '<details><summary>Changelog Description (Customer-facing)</summary>' . $content ),
+			'unclosed unrelated block first' => array( "<details><summary>Notes</summary>\n\n<details open><summary><h2>Changelog Description</h2></summary>" . $content ),
+			'CRLF line endings'              => array( "<details open>\r\n<summary><h2>Changelog Description</h2></summary>\r\n\r\n### Fixed\r\n\r\n- Fixed a bug\r\n\r\n</details>\r\n\r\nFooter" ),
 		);
 	}
 
@@ -467,48 +638,16 @@ Foo Bar!';
 <li>Fixed bug in <code>my_function()</code></li>
 </ul>',
 			),
-			'drops content after the list items'    => array(
+			'bare list markers'                     => array(
 				'<h3>Fixed</h3>
-<ul>
-<li>Fixed a bug</li>
-</ul>
-<p>🤖 Generated with <a href="https://claude.com/claude-code">Claude Code</a></p>',
-				'<h3>Fixed</h3>
-<ul>
-<li>Fixed a bug</li>
-</ul>',
-			),
-			'stops at the first non-list element'   => array(
-				'<h3>Added</h3>
+<p>-</p>
+<h3>Added</h3>
 <ul>
 <li>Added a feature</li>
-</ul>
-<p>Some trailing note</p>
-<h3>Fixed</h3>
-<ul>
-<li>Fixed a bug</li>
 </ul>',
 				'<h3>Added</h3>
 <ul>
 <li>Added a feature</li>
-</ul>',
-			),
-			'keeps multiple sections'               => array(
-				'<h3>Added</h3>
-<ul>
-<li>Added a feature</li>
-</ul>
-<h3>Fixed</h3>
-<ul>
-<li>Fixed a bug</li>
-</ul>',
-				'<h3>Added</h3>
-<ul>
-<li>Added a feature</li>
-</ul>
-<h3>Fixed</h3>
-<ul>
-<li>Fixed a bug</li>
 </ul>',
 			),
 		);

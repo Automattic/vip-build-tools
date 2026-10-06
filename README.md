@@ -60,6 +60,31 @@ GITHUB_TOKEN="" CHANGELOG_POST_TOKEN="" CIRCLE_PROJECT_USERNAME="" CIRCLE_PROJEC
     --changelog-title="VIP Dashboard {date}"
 ```
 
+### Changelog Section Format
+
+By default, the changelog is everything between the `## Changelog Description` heading and the next `##` heading.
+
+To control exactly what gets published, wrap the section in a `<details>` block whose summary starts with the `start-marker` text (compared without tags, ignoring case). Only the content inside the block is published; anything after it, such as footers, is ignored:
+
+```markdown
+<details open>
+<summary><h2>Changelog Description (Customer-facing)</h2></summary>
+
+### Fixed
+
+- Fixed a bug.
+
+</details>
+```
+
+Notes:
+
+- Keep the blank lines after `</summary>` and before `</details>` so GitHub renders the Markdown inside the block.
+- Don't indent the content by 4 or more spaces, or it is rendered as a code block.
+- `<details>` blocks inside code blocks or inline code are ignored, and nested `<details>` blocks are kept as part of the changelog.
+- The first `<details>` changelog block with content is used. If there's none, or it only contains the empty template, the `## Changelog Description` section is used instead.
+- When building release changelogs (`changelog-source=last-release`), entries are grouped by `###` heading, so stick to `###` headings followed by lists.
+
 ### Custom Title Examples
 
 The `--changelog-title` option supports the following placeholders:

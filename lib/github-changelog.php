@@ -155,6 +155,93 @@ function get_changelog_section_in_description_html( $description ) {
 }
 
 /**
+ * Replaces fenced code blocks and inline code spans with spaces of the same length,
+ * so HTML shown as code isn't mistaken for real markup while offsets stay intact.
+ *
+ * @param string $markdown The markdown to mask
+ * @return string The masked markdown
+ */
+function mask_markdown_code( $markdown ) {
+	$blank = function ( $matches ) {
+		return preg_replace( '/[^\n]/', ' ', $matches[0] );
+	};
+
+	// Fenced code blocks; an unclosed fence runs to the end of the document.
+	$markdown = preg_replace_callback( '/^ {0,3}(`{3,}|~{3,})[^\n]*\n.*?(?:^ {0,3}\1[`~]*[ \t]*$|\z)/ms', $blank, $markdown );
+
+	// Inline code spans.
+	return preg_replace_callback( '/(`+)(?!`).+?(?<!`)\1(?!`)/', $blank, $markdown );
+}
+
+/**
+ * Normalizes summary/marker text for comparison: no tags, no leading markdown
+ * heading characters, collapsed whitespace.
+ *
+ * @param string $text The text to normalize
+ * @return string The normalized text
+ */
+function normalize_changelog_marker( $text ) {
+	$text = html_entity_decode( preg_replace( '/<[^>]*>/', '', $text ), ENT_QUOTES, 'UTF-8' );
+	$text = preg_replace( '/^\s*#+\s*/', '', $text );
+	return trim( preg_replace( '/\s+/', ' ', $text ) );
+}
+
+/**
+ * Gets the changelog sections wrapped in <details> blocks whose summary starts
+ * with the changelog marker, e.g.:
+ *
+ * <details open>
+ * <summary><h2>Changelog Description</h2></summary>
+ * ...
+ * </details>
+ *
+ * Nested <details> blocks are kept inside the section, and <details> shown in
+ * code blocks or inline code is ignored.
+ *
+ * @param string $description The PR description (markdown)
+ * @return string[] The markdown inside each matching <details> block, in document order
+ */
+function get_changelog_sections_in_details( $description ) {
+	$description = str_replace( "\r\n", "\n", $description );
+	$masked      = mask_markdown_code( $description );
+	$marker      = normalize_changelog_marker( PR_CHANGELOG_START_MARKER );
+
+	if ( ! preg_match_all( '/<(\/?)details(?=[\s>])[^>]*>/i', $masked, $tags, PREG_SET_ORDER | PREG_OFFSET_CAPTURE ) ) {
+		return array();
+	}
+
+	// Pair opening and closing tags, accounting for nesting.
+	$blocks = array();
+	$open   = array();
+	foreach ( $tags as $tag ) {
+		$offset = $tag[0][1];
+		if ( '' === $tag[1][0] ) {
+			$open[] = $offset + strlen( $tag[0][0] );
+		} elseif ( $open ) {
+			$start            = array_pop( $open );
+			$blocks[ $start ] = $offset - $start;
+		}
+	}
+	ksort( $blocks );
+
+	$sections = array();
+	foreach ( $blocks as $start => $length ) {
+		$inner_masked = substr( $masked, $start, $length );
+		if ( ! preg_match( '/^\s*<summary\b[^>]*>(.*?)<\/summary>/is', $inner_masked, $summary ) ) {
+			continue;
+		}
+
+		if ( '' === $marker || stripos( normalize_changelog_marker( $summary[1] ), $marker ) !== 0 ) {
+			continue;
+		}
+
+		$sections[] = substr( $description, $start + strlen( $summary[0] ), $length - strlen( $summary[0] ) );
+	}
+
+	return $sections;
+}
+
+/**
  * Cleans empty list items and sections from changelog HTML.
  *
  * @param string $html The changelog HTML to clean
@@ -187,30 +274,17 @@ function clean_changelog_html( $html ) {
 		$item->parentNode->removeChild( $item );
 	}
 
+	// Remove bare list markers ("-", "*", "+"), which Parsedown renders as paragraphs
+	// while GitHub renders them as empty list items.
+	$bare_markers = $xpath->query( '//p[normalize-space()="-" or normalize-space()="*" or normalize-space()="+"]' );
+	foreach ( $bare_markers as $paragraph ) {
+		$paragraph->parentNode->removeChild( $paragraph );
+	}
+
 	// Remove empty ul elements.
 	$empty_lists = $xpath->query( '//ul[not(li)]' );
 	foreach ( $empty_lists as $list ) {
 		$list->parentNode->removeChild( $list );
-	}
-
-	// Once list items have started, only headings and lists belong to the changelog.
-	// Drop everything from the first other element onwards (e.g. trailing footers).
-	$first_list = $xpath->query( '//ul' )->item( 0 );
-	if ( $first_list ) {
-		$next_node = $first_list->nextSibling;
-		$bailed    = false;
-		while ( $next_node ) {
-			$current   = $next_node;
-			$next_node = $next_node->nextSibling;
-
-			if ( ! $bailed && XML_ELEMENT_NODE === $current->nodeType && ! in_array( $current->nodeName, array( 'h3', 'ul' ), true ) ) {
-				$bailed = true;
-			}
-
-			if ( $bailed ) {
-				$current->parentNode->removeChild( $current );
-			}
-		}
 	}
 
 	// Find h3 elements followed by no meaningful content.
@@ -261,7 +335,6 @@ function clean_changelog_html( $html ) {
 	$output = preg_replace( '/<ul>\s*<li>/', "<ul>\n<li>", $output );
 	$output = preg_replace( '/<\/li>\s*<li>/', "</li>\n<li>", $output );
 	$output = preg_replace( '/<\/li>\s*<\/ul>/', "</li>\n</ul>", $output );
-	$output = preg_replace( '/<\/ul>\s*</', "</ul>\n<", $output );
 
 	return trim( $output );
 }
@@ -278,18 +351,29 @@ function get_changelog_html( $pr, $link_to_pr = LINK_TO_PR ) {
 		return null;
 	}
 
-	$parsedown        = new Parsedown();
-	$body             = preg_replace( '/<!--(.|\s)*?-->/', '', $pr['body'] );
-	$description_html = $parsedown->text( $body );
+	$parsedown      = new Parsedown();
+	$body           = preg_replace( '/<!--(.|\s)*?-->/', '', $pr['body'] );
+	$changelog_html = '';
 
-	$changelog_html = get_changelog_section_in_description_html( $description_html );
-
-	if ( empty( $changelog_html ) ) {
-		return null;
+	// Prefer the first <details> changelog block with content after cleaning.
+	foreach ( get_changelog_sections_in_details( $body ) as $section_markdown ) {
+		$changelog_html = clean_changelog_html( $parsedown->text( $section_markdown ) );
+		if ( ! empty( $changelog_html ) ) {
+			break;
+		}
 	}
 
-	// Clean empty list items and sections.
-	$changelog_html = clean_changelog_html( $changelog_html );
+	// Fall back to the "## Changelog Description" section.
+	if ( empty( $changelog_html ) ) {
+		$section_html = get_changelog_section_in_description_html( $parsedown->text( $body ) );
+
+		if ( empty( $section_html ) ) {
+			return null;
+		}
+
+		// Clean empty list items and sections.
+		$changelog_html = clean_changelog_html( $section_html );
+	}
 
 	if ( empty( $changelog_html ) ) {
 		return null;
