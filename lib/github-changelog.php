@@ -169,8 +169,8 @@ function mask_markdown_code( $markdown ) {
 	// Fenced code blocks; an unclosed fence runs to the end of the document.
 	$markdown = preg_replace_callback( '/^ {0,3}(`{3,}|~{3,})[^\n]*\n.*?(?:^ {0,3}\1[`~]*[ \t]*$|\z)/ms', $blank, $markdown );
 
-	// Inline code spans.
-	return preg_replace_callback( '/(`+)(?!`).+?(?<!`)\1(?!`)/', $blank, $markdown );
+	// Inline code spans, which may cross line breaks but not blank lines.
+	return preg_replace_callback( '/(`+)(?!`)(?:(?!\n[ \t]*\n).)+?(?<!`)\1(?!`)/s', $blank, $markdown );
 }
 
 /**

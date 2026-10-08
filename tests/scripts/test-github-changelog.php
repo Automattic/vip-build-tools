@@ -159,6 +159,9 @@ Use the new format:
 
 Or inline: `<details><summary><h2>Changelog Description</h2></summary> x </details>`
 
+Or inline across lines: `<details><summary><h2>Changelog Description</h2></summary>
+fake item </details>`
+
 ## Changelog Description
 
 ### Added
