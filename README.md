@@ -42,6 +42,7 @@ Most of these variables are already [built-in](https://circleci.com/docs/2.0/env
 | CIRCLE_PROJECT_REPONAME | The name of the repository of the current project.                   | Required            |
 | CHANGELOG_POST_TOKEN    | WordPress.com auth token required to post to the endpoint.           | Required            |
 | GITHUB_TOKEN            | The GitHub personal acess token needed to read private repositories. | Optional            |
+| GITHUB_API_URL          | The GitHub API base URL. Set automatically in GitHub Actions; needed for GitHub Enterprise Server elsewhere. Defaults to `https://api.github.com`. | Optional            |
 
 
 - `CHANGELOG_POST_TOKEN` can be generated using a helper app like https://github.com/Automattic/node-wpcom-oauth ([example instructions](https://wp.me/p6jPRI-4xy#comment-26288))
