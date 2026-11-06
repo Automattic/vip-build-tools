@@ -65,6 +65,8 @@ GITHUB_TOKEN="" CHANGELOG_POST_TOKEN="" CIRCLE_PROJECT_USERNAME="" CIRCLE_PROJEC
 
 By default, the changelog is everything between the `## Changelog Description` heading and the next `##` heading.
 
+Only content under a `###` heading, such as `### Fixed`, is published. Text before the first `###` heading, like a "No customer-facing changes." note, isn't published. To publish nothing for a PR, leave the section empty.
+
 To control exactly what gets published, wrap the section in a `<details>` block whose summary starts with the `start-marker` text (compared without tags, ignoring case). Only the content inside the block is published; anything after it, such as footers, is ignored:
 
 ```markdown

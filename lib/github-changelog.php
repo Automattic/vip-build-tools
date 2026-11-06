@@ -242,6 +242,38 @@ function get_changelog_sections_in_details( $description ) {
 }
 
 /**
+ * Removes everything before the first top-level <h3>, or everything when there
+ * isn't one.
+ *
+ * Changelog entries go under a "###" heading such as "### Fixed". Text above
+ * the first heading is usually a note to reviewers, like "No customer-facing
+ * changes.", and isn't meant to be published.
+ *
+ * @param DOMDocument $dom The changelog document, changed in place.
+ * @return void
+ */
+function remove_changelog_text_before_first_heading( DOMDocument $dom ) {
+	// phpcs:disable WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase
+	$node = $dom->firstChild;
+
+	while ( $node ) {
+		$next_node = $node->nextSibling;
+
+		if ( XML_ELEMENT_NODE === $node->nodeType && 'h3' === $node->nodeName ) {
+			break;
+		}
+
+		/* Keep the <?xml encoding="utf-8" ?> hint; it's stripped from the output later. */
+		if ( XML_PI_NODE !== $node->nodeType ) {
+			$dom->removeChild( $node );
+		}
+
+		$node = $next_node;
+	}
+	// phpcs:enable WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase
+}
+
+/**
  * Cleans empty list items and sections from changelog HTML.
  *
  * @param string $html The changelog HTML to clean
@@ -318,6 +350,8 @@ function clean_changelog_html( $html ) {
 			$heading->parentNode->removeChild( $heading );
 		}
 	}
+
+	remove_changelog_text_before_first_heading( $dom );
 
 	$output = $dom->saveHTML();
 	// phpcs:enable WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase
