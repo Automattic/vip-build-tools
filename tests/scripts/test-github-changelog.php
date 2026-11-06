@@ -653,6 +653,110 @@ Footer',
 <li>Added a feature</li>
 </ul>',
 			),
+			'text before the first heading'         => array(
+				'<p>No customer-facing changes.</p>
+<h3>Fixed</h3>
+<ul>
+<li>Fixed a bug</li>
+</ul>',
+				'<h3>Fixed</h3>
+<ul>
+<li>Fixed a bug</li>
+</ul>',
+			),
+			'text without any heading'              => array(
+				'<p>No customer-facing changes.</p>
+<ul>
+<li>Test-only change</li>
+</ul>',
+				'',
+			),
+			'blank paragraph before a heading'      => array(
+				'<p>&nbsp;</p>
+<h3>Changed</h3>
+<ul>
+<li>Changed a thing</li>
+</ul>',
+				'<h3>Changed</h3>
+<ul>
+<li>Changed a thing</li>
+</ul>',
+			),
+		);
+	}
+
+	public function test_get_changelog_html_skips_note_without_heading(): void {
+		$pr = array(
+			'body' => '## Description
+
+Exercise runtime-log and slow-log follow loops.
+
+## Changelog Description
+
+No customer-facing changes.
+
+## Pull request checklist
+
+- [x] Add/update automated tests as needed.',
+		);
+
+		$this->assertNull( get_changelog_html( $pr ) );
+	}
+
+	public function test_get_changelog_html_skips_note_without_heading_in_details_block(): void {
+		$pr = array(
+			'body' => '## Description
+
+Internal tooling change.
+
+<details open>
+<summary><h2>Changelog Description (Customer-facing)</h2></summary>
+
+No customer-facing changes.
+
+</details>',
+		);
+
+		$this->assertNull( get_changelog_html( $pr ) );
+	}
+
+	public function test_release_changelog_skips_note_without_heading(): void {
+		$prs = array(
+			array(
+				'body'   => '## Changelog Description
+
+### Fixed
+
+- Fixed bug A',
+				'labels' => array(),
+			),
+			array(
+				'body'   => '## Changelog Description
+
+No customer-facing changes.',
+				'labels' => array(),
+			),
+			array(
+				'body'   => '## Changelog Description
+
+### Fixed
+
+- Fixed bug B',
+				'labels' => array(),
+			),
+		);
+
+		list( $changelog_html ) = generate_changelog_from_prs( $prs );
+		$parsed                 = parse_changelog_html( $changelog_html );
+
+		/* Without per-PR filtering, the note would be merged in as a "Fixed" item. */
+		$this->assertEquals(
+			'<h3>Fixed</h3>
+<ul>
+<li>Fixed bug A</li>
+<li>Fixed bug B</li>
+</ul>',
+			$parsed['content']
 		);
 	}
 
