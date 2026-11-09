@@ -11,10 +11,10 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v7
 
       - name: Install PHP Dependencies
-        uses: ramsey/composer-install@83af392bf5f031813d25e6fe4cd626cdba9a2df6 # 2.2.0
+        uses: ramsey/composer-install@65e4f84970763564f46a70b8a54b90d033b3bdda # 4.0.0
 
       - name: Run PHPUnit
         run: vendor/bin/phpunit
